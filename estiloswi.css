@@ -468,6 +468,10 @@ html[data-theme="light"] .badge.yape{background:#f3e1fb;color:#631882}
 .btn-supa-dark{background:#0f172a;color:#ffffff;border-color:#1e293b;border-radius:999px;padding:0 16px}
 .btn-supa-outline{background:var(--panel);color:var(--txt);border-color:var(--line2)}
 .supa-code{max-height:320px;max-width:100%;overflow:auto;padding:14px;border-radius:12px;background:#0d1322;color:#dbeafe;font:12px/1.48 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre}
+.supa-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:8px}
+.supa-stat{padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.supa-stat small{display:block;font-size:.7rem;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.03em}
+.supa-stat b{font:700 1.05rem var(--display);color:var(--txt);font-variant-numeric:tabular-nums}
 
 /* ---------- Licencia ---------- */
 .lic-lock-box{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:38px 20px}
