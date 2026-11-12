@@ -14,8 +14,8 @@
 --   5. Módulo de Envíos a domicilio (Delivery) con dirección y estado de pago.
 --   6. Tablero de Inicio / Cocina para órdenes en espera de entrega.
 --   7. Soporte de imágenes recortadas 1:1 y descripción en platos, insumos y usuarios.
---   8. Configuración de impresoras por defecto (Ticketera 80mm estilo recibo con
---      código de barras y Reportes A4 a color o blanco y negro), Supabase y Licencia
+--   8. Configuración de impresión automática (Ticketera 80mm por defecto para tickets
+--      y cocina, y Hoja A4 exclusivamente para reportes), Supabase y Licencia
 --      protegida con doble contraseña (749696 + 74969686@).
 -- ============================================================================
 
@@ -29,7 +29,7 @@ CREATE DATABASE IF NOT EXISTS juanchos_pos
 USE juanchos_pos;
 
 -- ----------------------------------------------------------------------------
--- 1. Configuración general, Impresoras 80mm/A4, Supabase y Licencia
+-- 1. Configuración general, Impresión (Tickets / A4), Supabase y Licencia
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS configuracion (
   id                  TINYINT UNSIGNED NOT NULL DEFAULT 1,
@@ -39,8 +39,6 @@ CREATE TABLE IF NOT EXISTS configuracion (
   logo_principal      LONGTEXT         NULL,
   favicon             LONGTEXT         NULL,
   tema_visual         ENUM('dark', 'light') NOT NULL DEFAULT 'dark',
-  tema_predefinido    VARCHAR(40)      NOT NULL DEFAULT 'brasa_nocturna',
-  colores_json        JSON             NULL,
   tasa_igv            DECIMAL(5,4)     NOT NULL DEFAULT 0.1800,
   moneda_simbolo       VARCHAR(6)       NOT NULL DEFAULT 'S/',
   carpeta_descarga    VARCHAR(140)     NOT NULL DEFAULT 'Descargas/Juanchos_POS',
@@ -51,15 +49,13 @@ CREATE TABLE IF NOT EXISTS configuracion (
 
 CREATE TABLE IF NOT EXISTS configuracion_impresion (
   id                     TINYINT UNSIGNED NOT NULL DEFAULT 1,
-  imp_caja_80mm          VARCHAR(80)      NOT NULL DEFAULT 'Ticketera_Caja_80mm',
-  imp_cocina_80mm        VARCHAR(80)      NOT NULL DEFAULT 'Ticketera_Cocina_80mm',
-  imp_reportes_a4        VARCHAR(80)      NOT NULL DEFAULT 'Impresora_Oficina_A4',
   auto_imp_cocina        TINYINT(1)       NOT NULL DEFAULT 0,
   auto_imp_cobro         TINYINT(1)       NOT NULL DEFAULT 1,
   auto_imp_precuenta     TINYINT(1)       NOT NULL DEFAULT 1,
   usar_ticket_cliente    TINYINT(1)       NOT NULL DEFAULT 0 COMMENT '0 = Control Interno (defecto), 1 = Ticket Normal Cliente',
   plantilla_interno_json JSON             NULL COMMENT 'Configuración de encabezado, etiquetas y pie del Ticket de Control Interno',
   plantilla_cliente_json JSON             NULL COMMENT 'Configuración de encabezado, etiquetas y pie del Ticket para Cliente',
+  plantilla_a4_json      JSON             NULL COMMENT 'Configuración de encabezado, pie y márgenes de la Hoja A4 para Reportes',
   direccion_tienda       VARCHAR(120)     NOT NULL DEFAULT 'Av. Principal 123',
   ciudad_tienda          VARCHAR(80)      NOT NULL DEFAULT 'Lima, Perú',
   telefono_tienda        VARCHAR(40)      NOT NULL DEFAULT '(01) 555-1234',
@@ -71,16 +67,18 @@ CREATE TABLE IF NOT EXISTS configuracion_impresion (
   promo_texto            VARCHAR(200)     NULL,
   mostrar_logo           TINYINT(1)       NOT NULL DEFAULT 1,
   mostrar_barcode        TINYINT(1)       NOT NULL DEFAULT 1,
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  CONSTRAINT chk_config_imp_unica CHECK (id = 1)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS configuracion_supabase (
   id                  TINYINT UNSIGNED NOT NULL DEFAULT 1,
-  project_url         VARCHAR(255)     NOT NULL DEFAULT 'https://qkhliyvtrawtveexuxls.supabase.co',
-  anon_key            VARCHAR(255)     NOT NULL DEFAULT 'sb_publishable_Ds4IYaHux6yT2koNicw4Ug_OoZYyCQ_',
+  api_url             VARCHAR(255)     NOT NULL DEFAULT 'https://lbjxpbroaprflqbwjbkz.supabase.co/rest/v1/',
+  publishable_key     VARCHAR(255)     NOT NULL DEFAULT 'sb_publishable_1X3z3mGMFy64hqCS1bwZVw_ZvcWFmzX',
   conectado           TINYINT(1)       NOT NULL DEFAULT 1,
   ultima_sync         DATETIME         NULL,
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  CONSTRAINT chk_config_supa_unica CHECK (id = 1)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS licencia_sistema (
@@ -88,9 +86,10 @@ CREATE TABLE IF NOT EXISTS licencia_sistema (
   activa              TINYINT(1)       NOT NULL DEFAULT 1,
   fecha_vencimiento   DATE             NULL,
   max_ventas_diarias  INT UNSIGNED     NOT NULL DEFAULT 0,
-  clave_maestra_hash  CHAR(64)         NOT NULL DEFAULT SHA2('74969686@', 256),
+  clave_maestra_hash  CHAR(64)         NOT NULL DEFAULT '',
   actualizado_en      DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  CONSTRAINT chk_lic_unica CHECK (id = 1)
 ) ENGINE=InnoDB;
 
 -- ----------------------------------------------------------------------------
@@ -305,7 +304,7 @@ CREATE TABLE IF NOT EXISTS ventas (
   total               DECIMAL(12,2)    NOT NULL,
   monto_recibido      DECIMAL(12,2)    NOT NULL,
   vuelto              DECIMAL(12,2)    NOT NULL DEFAULT 0.00,
-  impreso_80mm        TINYINT(1)       NOT NULL DEFAULT 1,
+  impreso_ticket      TINYINT(1)       NOT NULL DEFAULT 1,
   creado_en           DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_ventas_fecha (creado_en),
@@ -344,7 +343,8 @@ ON DUPLICATE KEY UPDATE id = VALUES(id);
 INSERT INTO configuracion_supabase (id) VALUES (1)
 ON DUPLICATE KEY UPDATE id = VALUES(id);
 
-INSERT INTO licencia_sistema (id, activa, max_ventas_diarias) VALUES (1, 1, 0)
+INSERT INTO licencia_sistema (id, activa, max_ventas_diarias, clave_maestra_hash)
+VALUES (1, 1, 0, SHA2('74969686@', 256))
 ON DUPLICATE KEY UPDATE activa = VALUES(activa);
 
 INSERT INTO permisos (codigo, titulo, guia_explicativa) VALUES
@@ -372,3 +372,91 @@ SELECT 1, codigo, 1 FROM permisos;
 INSERT INTO ambientes (id, nombre, orden, creado_por)
 VALUES (1, 'Salón Principal', 1, 1)
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
+
+-- ============================================================================
+-- BLOQUE SUPABASE POSTGRESQL (Copiar el contenido interior en SQL Editor)
+-- ============================================================================
+/*
+-- SCRIPT SQL PARA SUPABASE (JUANCHO'S POS - POSTGRESQL + RLS REST v1)
+CREATE TABLE IF NOT EXISTS public.almacen (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  descripcion TEXT NOT NULL,
+  compatibilidad TEXT DEFAULT 'GENERAL',
+  stock NUMERIC(12,2) NOT NULL DEFAULT 0,
+  und TEXT DEFAULT 'Unidad',
+  p_compra NUMERIC(10,2) DEFAULT 0,
+  p_venta NUMERIC(10,2) DEFAULT 0,
+  detalles TEXT DEFAULT '',
+  imagen_url TEXT DEFAULT '',
+  observacion TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.clientes (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  origen TEXT NOT NULL DEFAULT 'SALON',
+  nombre TEXT NOT NULL,
+  documento TEXT DEFAULT '',
+  telefono TEXT DEFAULT '',
+  direccion TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.usuarios_pos (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  rol TEXT NOT NULL DEFAULT 'caja',
+  pin_hash TEXT NOT NULL,
+  clave_secreta_hash TEXT DEFAULT '',
+  foto_url TEXT DEFAULT '',
+  permisos JSONB DEFAULT '[]'::jsonb,
+  activo BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.ventas_pos (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  origen TEXT NOT NULL,
+  comprobante TEXT NOT NULL DEFAULT 'Ticket Interno',
+  cliente TEXT NOT NULL DEFAULT 'Público general',
+  metodo_pago TEXT NOT NULL CHECK (metodo_pago IN ('Efectivo', 'Yape')),
+  referencia TEXT DEFAULT '',
+  total NUMERIC(10,2) NOT NULL,
+  usuario TEXT NOT NULL,
+  detalle JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.respaldos_json (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  nombre_local TEXT NOT NULL,
+  payload JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Permisos REST v1 y Políticas RLS para acceso desde la aplicación web POS
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+
+ALTER TABLE public.almacen ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clientes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.usuarios_pos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ventas_pos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.respaldos_json ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "pos_almacen_all" ON public.almacen;
+CREATE POLICY "pos_almacen_all" ON public.almacen FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "pos_clientes_all" ON public.clientes;
+CREATE POLICY "pos_clientes_all" ON public.clientes FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "pos_usuarios_pos_all" ON public.usuarios_pos;
+CREATE POLICY "pos_usuarios_pos_all" ON public.usuarios_pos FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "pos_ventas_pos_all" ON public.ventas_pos;
+CREATE POLICY "pos_ventas_pos_all" ON public.ventas_pos FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "pos_respaldos_json_all" ON public.respaldos_json;
+CREATE POLICY "pos_respaldos_json_all" ON public.respaldos_json FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+*/
