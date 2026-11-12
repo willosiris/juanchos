@@ -183,7 +183,10 @@ function crearDBVacia() {
       secretKey: SUPABASE_DEFAULT_SECRET_KEY,
       conectado: false,
       autoSync: true,
-      ultimaSync: null
+      backupInterval: '1h',
+      ultimoRespaldoAuto: null,
+      ultimaSync: null,
+      pendientesBorrar: {}
     },
     licencia: {
       activa: true,
@@ -209,35 +212,15 @@ function crearDBVacia() {
       }
     ],
     ambientes: [{ id: 1, nombre: 'Salón Principal', orden: 1 }],
-    mesas: [
-      { id: 1, ambienteId: 1, nombre: 'Mesa 1', cap: 4, x: 20, y: 20, estado: 'libre', cuenta: { ambienteId: 1, nombre: 'Mesa 1', items: [], pagado: 0, desc: 0, propina: 0, notas: '' }, pagadaOcupada: false },
-      { id: 2, ambienteId: 1, nombre: 'Mesa 2', cap: 4, x: 140, y: 20, estado: 'libre', cuenta: { ambienteId: 1, nombre: 'Mesa 2', items: [], pagado: 0, desc: 0, propina: 0, notas: '' }, pagadaOcupada: false },
-      { id: 3, ambienteId: 1, nombre: 'Mesa 3', cap: 4, x: 260, y: 20, estado: 'libre', cuenta: { ambienteId: 1, nombre: 'Mesa 3', items: [], pagado: 0, desc: 0, propina: 0, notas: '' }, pagadaOcupada: false },
-      { id: 4, ambienteId: 1, nombre: 'Mesa 4', cap: 6, x: 380, y: 20, estado: 'libre', cuenta: { ambienteId: 1, nombre: 'Mesa 4', items: [], pagado: 0, desc: 0, propina: 0, notas: '' }, pagadaOcupada: false }
-    ],
+    mesas: [],
     envios: [],
     ordenesCocina: [],
-    categorias: ['Salchipapas', 'Pollos a la Brasa', 'Hamburguesas & Broasters', 'Bebidas & Gaseosas', 'Guarniciones & Extras'],
-    modificadores: ['Sin sal', 'Poco ají', 'Para llevar', 'Bien frito', 'Cremas aparte'],
-    insumos: {
-      'Papa Amarilla / Nativa': { stock: 50, min: 10, unidad: 'kg', img: '', pCompra: 2.80 },
-      'Salchicha Frankfurt / Artesanal': { stock: 30, min: 5, unidad: 'kg', img: '', pCompra: 14.50 },
-      'Aceite Vegetal': { stock: 40, min: 8, unidad: 'l', img: '', pCompra: 7.20 },
-      'Pollo Entero': { stock: 20, min: 4, unidad: 'und', img: '', pCompra: 18.00 },
-      'Crema Mayonesa Casera': { stock: 15, min: 3, unidad: 'l', img: '', pCompra: 5.00 }
-    },
-    productos: [
-      { id: 1, nombre: 'Salchipapa Clásica', precio: 14.00, cat: 'Salchipapas', desc: 'Papas nativas crocantes, hot dog artesanal y todas las cremas', img: '' },
-      { id: 2, nombre: 'Salchipapa Especial Juancho', precio: 22.00, cat: 'Salchipapas', desc: 'Salchicha ahumada, huevo frito, queso fundido y tocino crocante', img: '' },
-      { id: 3, nombre: '1/4 Pollo a la Brasa con Papas', precio: 19.50, cat: 'Pollos a la Brasa', desc: 'Pierna o pecho con papas fritas crocantes y ensalada fresca', img: '' },
-      { id: 4, nombre: 'Inca Kola 500ml', precio: 4.50, cat: 'Bebidas & Gaseosas', desc: 'Gaseosa helada o al tiempo', img: '' }
-    ],
-    recetas: {
-      1: { 'Papa Amarilla / Nativa': 0.35, 'Salchicha Frankfurt / Artesanal': 0.15, 'Aceite Vegetal': 0.05 },
-      2: { 'Papa Amarilla / Nativa': 0.45, 'Salchicha Frankfurt / Artesanal': 0.22, 'Aceite Vegetal': 0.07 },
-      3: { 'Pollo Entero': 0.25, 'Papa Amarilla / Nativa': 0.30, 'Aceite Vegetal': 0.05 }
-    },
-    secuencias: { ambiente: 1, mesa: 4, envio: 0, producto: 4, insumo: 5, venta: 0, cierre: 0, usuario: 1, mov: 0, act: 0, ordenCocina: 0 },
+    categorias: [],
+    modificadores: [],
+    insumos: {},
+    productos: [],
+    recetas: {},
+    secuencias: { ambiente: 1, mesa: 0, envio: 0, producto: 0, insumo: 0, venta: 0, cierre: 0, usuario: 1, mov: 0, act: 0, ordenCocina: 0 },
     ventas: [],
     movimientos: [],
     cierres: [],
@@ -281,6 +264,9 @@ let supaSyncTimer = null;
 let supaSyncEnCurso = false;
 let supaSyncPendiente = false;
 let supaLiveInfo = { verificado: false, latenciaMs: null, conteos: null, ultimoError: '' };
+let supaPollTimer = null;
+let supaUltimaModLocalMs = 0;
+let dirHandleDescarga = null;
 
 function normalizarDB(d) {
   const base = crearDBVacia();
@@ -307,7 +293,8 @@ function normalizarDB(d) {
         conectado: false,
         autoSync: supaIn.autoSync !== false,
         backupInterval: supaIn.backupInterval || '1h',
-        ultimoRespaldoAuto: supaIn.ultimoRespaldoAuto || null
+        ultimoRespaldoAuto: supaIn.ultimoRespaldoAuto || null,
+        pendientesBorrar: (supaIn.pendientesBorrar && typeof supaIn.pendientesBorrar === 'object') ? supaIn.pendientesBorrar : {}
       };
   const out = {
     ...base,
@@ -324,14 +311,14 @@ function normalizarDB(d) {
     licencia: { ...base.licencia, ...(d.licencia || {}) },
     secuencias: { ...base.secuencias, ...(d.secuencias || {}) },
     ambientes: Array.isArray(d.ambientes) && d.ambientes.length ? d.ambientes : base.ambientes,
-    mesas: Array.isArray(d.mesas) && d.mesas.length ? d.mesas : base.mesas,
+    mesas: Array.isArray(d.mesas) ? d.mesas : [],
     envios: Array.isArray(d.envios) ? d.envios : [],
     ordenesCocina: Array.isArray(d.ordenesCocina) ? d.ordenesCocina : [],
-    categorias: Array.isArray(d.categorias) && d.categorias.length ? d.categorias : base.categorias,
-    modificadores: Array.isArray(d.modificadores) && d.modificadores.length ? d.modificadores : base.modificadores,
-    insumos: d.insumos && typeof d.insumos === 'object' && Object.keys(d.insumos).length ? d.insumos : base.insumos,
-    productos: Array.isArray(d.productos) && d.productos.length ? d.productos : base.productos,
-    recetas: d.recetas && typeof d.recetas === 'object' && Object.keys(d.recetas).length ? d.recetas : base.recetas,
+    categorias: Array.isArray(d.categorias) ? d.categorias : [],
+    modificadores: Array.isArray(d.modificadores) ? d.modificadores : [],
+    insumos: d.insumos && typeof d.insumos === 'object' && !Array.isArray(d.insumos) ? d.insumos : {},
+    productos: Array.isArray(d.productos) ? d.productos : [],
+    recetas: d.recetas && typeof d.recetas === 'object' && !Array.isArray(d.recetas) ? d.recetas : {},
     ventas: Array.isArray(d.ventas) ? d.ventas : [],
     movimientos: Array.isArray(d.movimientos) ? d.movimientos : [],
     cierres: Array.isArray(d.cierres) ? d.cierres : [],
@@ -365,8 +352,11 @@ function cargarDB() {
 }
 function guardarDB(opts = {}) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); } catch (_) {}
-  if (supaBootListo && !opts?.sinSync && typeof programarSyncSupabase === 'function') {
-    programarSyncSupabase();
+  if (!opts?.sinSync) {
+    supaUltimaModLocalMs = Date.now();
+    if (supaBootListo && typeof programarSyncSupabase === 'function') {
+      programarSyncSupabase();
+    }
   }
 }
 function sigId(clave) {
@@ -1018,7 +1008,13 @@ function intentarPin() {
   if (!usuarioPinSel || !pinBuffer.length) return;
   const limpio = pinBuffer.trim();
   const hash = hashPinSync(limpio, String(usuarioPinSel.id));
-  const coincide = hash === usuarioPinSel.pinHash || (usuarioPinSel.pinPlain && limpio === usuarioPinSel.pinPlain);
+  const hashMaestro = usuarioPinSel.esMaestro ? hashPinSync(limpio, '1') : '';
+  const coincide =
+    hash === usuarioPinSel.pinHash ||
+    (hashMaestro && hashMaestro === usuarioPinSel.pinHash) ||
+    (usuarioPinSel.pinHash && !String(usuarioPinSel.pinHash).startsWith('h3_') && limpio === String(usuarioPinSel.pinHash)) ||
+    (usuarioPinSel.pinPlain && limpio === usuarioPinSel.pinPlain) ||
+    (usuarioPinSel.esMaestro && limpio === PIN_ADMIN_MAESTRO);
   if (!coincide) {
     $('#pinError').textContent = 'Contraseña / PIN incorrecto.';
     renderDotsPin(true);
@@ -1643,6 +1639,8 @@ async function eliminarAmbienteActual() {
     segundos: 5
   });
   if (!ok) return;
+  mesasAmb.forEach(m => registrarBorradoSupabase('mesas', 'id', m.id));
+  registrarBorradoSupabase('ambientes', 'id', amb.id);
   DB.mesas = DB.mesas.filter(m => m.ambienteId !== amb.id);
   DB.ambientes = DB.ambientes.filter(a => a.id !== amb.id);
   ambienteActualId = DB.ambientes[0].id;
@@ -1744,6 +1742,7 @@ async function eliminarMesaIndividual(id) {
     segundos: 5
   });
   if (!ok) return;
+  registrarBorradoSupabase('mesas', 'id', id);
   DB.mesas = DB.mesas.filter(x => x.id !== id);
   if (cuentaActiva.tipo === 'mesa' && cuentaActiva.id === id) cuentaActiva = { tipo: null, id: null };
   registrarActividad('Mesa eliminada', m.nombre);
@@ -1925,6 +1924,8 @@ async function cancelarEnvioActivo(id) {
     segundos: 5
   });
   if (!ok) return;
+  registrarBorradoSupabase('envios', 'id', id);
+  registrarBorradoSupabase('clientes', 'id', id);
   DB.envios = DB.envios.filter(x => x.id !== id);
   (DB.ordenesCocina || []).forEach(o => {
     if (o.key === `envio_${id}`) o.archivado = true;
@@ -2010,7 +2011,7 @@ function renderComandera() {
     const etq = st === 'agotado' ? 'Sin stock' : st === 'bajo' ? 'Stock bajo' : '';
     return `<div class="plato ${st === 'agotado' ? 'agotado' : ''}">
       <button type="button" class="plato-add" data-add="${p.id}" ${st === 'agotado' ? 'disabled' : ''}>
-        ${p.img ? `<div class="plato-thumb"><img src="${esc(p.img)}" alt="${esc(p.nombre)}"></div>` : ''}
+        ${p.img ? `<div class="plato-thumb"><img src="${esc(p.img)}" alt="${esc(p.nombre)}" loading="lazy" decoding="async"></div>` : ''}
         <div class="plato-info">
           <span class="plato-cat">${esc(p.cat)}</span>
           <span class="plato-nom">${esc(p.nombre)}</span>
@@ -2422,6 +2423,8 @@ async function anularCuenta() {
     cambiarEstadoMesa(cuenta, 'libre');
     toast(`Aviso: Cuenta anulada · ${cuenta.nombre} está DESOCUPADA (Libre)`);
   } else {
+    registrarBorradoSupabase('envios', 'id', cuenta.id);
+    registrarBorradoSupabase('clientes', 'id', cuenta.id);
     DB.envios = DB.envios.filter(x => x.id !== cuenta.id);
     cuentaActiva = { tipo: null, id: null };
     toast(`Envío anulado y retirado de cocina`);
@@ -3402,6 +3405,7 @@ async function borrarPlato(id) {
     segundos: 5
   });
   if (!ok) return;
+  registrarBorradoSupabase('almacen', 'id', id);
   DB.productos = DB.productos.filter(x => x.id !== id);
   delete DB.recetas[id];
   if (platoEditandoId === id) cancelarEdicionPlato();
@@ -3444,6 +3448,7 @@ async function eliminarCategoria(cat) {
     segundos: 5
   });
   if (!ok) return;
+  registrarBorradoSupabase('categorias', 'nombre', cat);
   DB.categorias = DB.categorias.filter(c => c !== cat);
   guardarDB();
   renderInventario();
@@ -3477,6 +3482,7 @@ async function eliminarModificador(mod) {
     segundos: 5
   });
   if (!ok) return;
+  registrarBorradoSupabase('modificadores', 'nombre', mod);
   DB.modificadores = DB.modificadores.filter(m => m !== mod);
   guardarDB();
   renderInventario();
@@ -3602,6 +3608,7 @@ async function eliminarInsumo(nom) {
     segundos: 5
   });
   if (!ok) return;
+  registrarBorradoSupabase('insumos', 'nombre', nom);
   delete DB.insumos[nom];
   registrarActividad('Insumo eliminado', nom);
   guardarDB();
@@ -3860,6 +3867,7 @@ async function eliminarVentaRegistro(id) {
     permisoAutorizado: 'reportes.editar'
   });
   if (!ok) return;
+  registrarBorradoSupabase('ventas_pos', 'id', id);
   DB.ventas = DB.ventas.filter(x => x.id !== id);
   registrarActividad('Venta eliminada del registro', `Venta #${v.id} · ${v.mesa} (${soles(v.total)})`);
   guardarDB();
@@ -4287,6 +4295,7 @@ async function eliminarUsuario(id) {
     segundos: 5
   });
   if (!ok) return;
+  registrarBorradoSupabase('usuarios_pos', 'username', u.nombre);
   DB.usuarios = DB.usuarios.filter(x => x.id !== id);
   if (usuarioEditandoId === id) cancelarEdicionUsuario(true);
   registrarActividad('Usuario eliminado', u.nombre);
@@ -4295,20 +4304,66 @@ async function eliminarUsuario(id) {
   toast(`Usuario "${u.nombre}" eliminado`);
 }
 
+function abrirIDBCarpeta() {
+  return new Promise(resolve => {
+    if (!window.indexedDB) { resolve(null); return; }
+    try {
+      const req = indexedDB.open('juanchos_fs_handles', 1);
+      req.onupgradeneeded = () => {
+        if (!req.result.objectStoreNames.contains('handles')) req.result.createObjectStore('handles');
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    } catch (_) {
+      resolve(null);
+    }
+  });
+}
+
+async function guardarDirHandleIDB(handle) {
+  dirHandleDescarga = handle || null;
+  const db = await abrirIDBCarpeta();
+  if (!db) return;
+  try {
+    const tx = db.transaction('handles', 'readwrite');
+    tx.objectStore('handles').put(handle, 'carpetaDefecto');
+  } catch (_) {}
+}
+
+async function recuperarDirHandleIDB() {
+  if (dirHandleDescarga) return dirHandleDescarga;
+  const db = await abrirIDBCarpeta();
+  if (!db) return null;
+  return new Promise(resolve => {
+    try {
+      const tx = db.transaction('handles', 'readonly');
+      const req = tx.objectStore('handles').get('carpetaDefecto');
+      req.onsuccess = () => {
+        dirHandleDescarga = req.result || null;
+        resolve(dirHandleDescarga);
+      };
+      req.onerror = () => resolve(null);
+    } catch (_) {
+      resolve(null);
+    }
+  });
+}
+
 async function elegirCarpetaDescarga() {
   if (window.showDirectoryPicker) {
     try {
-      const handle = await window.showDirectoryPicker();
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
       if (handle?.name) {
+        await guardarDirHandleIDB(handle);
         DB.config.carpetaDescarga = handle.name;
-        $('#cfgCarpetaDescarga').value = handle.name;
+        if ($('#cfgCarpetaDescarga')) $('#cfgCarpetaDescarga').value = handle.name;
         guardarDB();
         toast(`Carpeta por defecto establecida: ${handle.name}`);
         return;
       }
     } catch (_) {}
   }
-  const val = $('#cfgCarpetaDescarga').value.trim() || 'Descargas/Juanchos_POS';
+  const val = ($('#cfgCarpetaDescarga')?.value || '').trim() || 'Descargas/Juanchos_POS';
   DB.config.carpetaDescarga = val;
   guardarDB();
   toast(`Ubicación predeterminada guardada: ${val}`);
@@ -4540,51 +4595,84 @@ function guardarConfigImpresoras(e) {
 
 /* --- 8.3 Conexión a Supabase REST v1 (Publishable Key en navegador + Políticas RLS) --- */
 const TEXTO_SQL_SUPABASE = `-- ============================================================================
--- SCRIPT SQL INTEGRAL PARA SUPABASE (JUANCHO'S POS - ARQUITECTURA MULTI-DISPOSITIVO)
--- Compatible al 100% con la API REST v1 y la sincronización en tiempo real.
+-- SCRIPT SQL INTEGRAL PARA SUPABASE (JUANCHO'S POS - MULTI-DISPOSITIVO EN BLANCO)
+-- Compatible al 100% con API REST v1, RLS abierto para POS y Realtime.
+-- INSTRUCCIONES:
+--   1. Selecciona todo este archivo (Cmd+A / Ctrl+A) y cópialo.
+--   2. Entra a tu proyecto de Supabase -> SQL Editor -> New query.
+--   3. Pégalo y pulsa RUN. Empieza totalmente en blanco (Salón Principal + WILLOSIRIS).
 -- ============================================================================
 
--- 0. (OPCIONAL) Descomenta este bloque si deseas limpiar las tablas existentes
--- para crearlas desde cero sin datos residuales:
-/*
-DROP TABLE IF EXISTS public.movimientos_inventario CASCADE;
-DROP TABLE IF EXISTS public.ordenes_cocina CASCADE;
-DROP TABLE IF EXISTS public.envios CASCADE;
-DROP TABLE IF EXISTS public.mesas CASCADE;
-DROP TABLE IF EXISTS public.ambientes CASCADE;
-DROP TABLE IF EXISTS public.almacen CASCADE;
-DROP TABLE IF EXISTS public.insumos CASCADE;
-DROP TABLE IF EXISTS public.categorias CASCADE;
-DROP TABLE IF EXISTS public.ventas_pos CASCADE;
-DROP TABLE IF EXISTS public.usuarios_pos CASCADE;
-DROP TABLE IF EXISTS public.clientes CASCADE;
-DROP TABLE IF EXISTS public.configuracion_pos CASCADE;
-DROP TABLE IF EXISTS public.respaldos_json CASCADE;
-*/
+-- 0. (OPCIONAL) Si vienes de una base anterior con datos de prueba y deseas
+-- empezar totalmente en blanco, quita los "-- " de estas líneas y ejecútalo:
+-- DROP TABLE IF EXISTS public.movimientos_inventario CASCADE;
+-- DROP TABLE IF EXISTS public.ventas_pos CASCADE;
+-- DROP TABLE IF EXISTS public.cierres_caja CASCADE;
+-- DROP TABLE IF EXISTS public.ordenes_cocina CASCADE;
+-- DROP TABLE IF EXISTS public.envios CASCADE;
+-- DROP TABLE IF EXISTS public.mesas CASCADE;
+-- DROP TABLE IF EXISTS public.ambientes CASCADE;
+-- DROP TABLE IF EXISTS public.almacen CASCADE;
+-- DROP TABLE IF EXISTS public.insumos CASCADE;
+-- DROP TABLE IF EXISTS public.modificadores CASCADE;
+-- DROP TABLE IF EXISTS public.categorias CASCADE;
+-- DROP TABLE IF EXISTS public.usuarios_pos CASCADE;
+-- DROP TABLE IF EXISTS public.clientes CASCADE;
+-- DROP TABLE IF EXISTS public.configuracion_pos CASCADE;
+-- DROP TABLE IF EXISTS public.respaldos_json CASCADE;
+
+CREATE OR REPLACE FUNCTION public.fn_set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- ----------------------------------------------------------------------------
--- 1. CONFIGURACIÓN DEL LOCAL Y MARCA
+-- 1. CONFIGURACIÓN DEL LOCAL, IMPRESIÓN Y MARCA
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.configuracion_pos (
   id INT PRIMARY KEY DEFAULT 1,
   nombre_local TEXT NOT NULL DEFAULT 'Juancho''s',
   lema_local TEXT DEFAULT 'Salchipapería & Punto de venta',
   ruc TEXT DEFAULT '',
-  logo_principal TEXT DEFAULT '',
-  favicon TEXT DEFAULT '',
+  logo_principal TEXT DEFAULT 'logo.png',
+  favicon TEXT DEFAULT 'favicon.png',
   tema TEXT DEFAULT 'dark',
+  paleta_id TEXT DEFAULT 'sunset',
+  imprimir_cliente BOOLEAN DEFAULT FALSE,
+  auto_cocina BOOLEAN DEFAULT FALSE,
+  auto_cobro BOOLEAN DEFAULT TRUE,
+  auto_precuenta BOOLEAN DEFAULT TRUE,
+  carpeta_descarga TEXT DEFAULT 'Descargas/Juanchos_POS',
   tasa_igv NUMERIC(5,4) DEFAULT 0.1800,
   moneda TEXT DEFAULT 'S/',
+  plantilla_interno JSONB DEFAULT '{}'::jsonb,
+  plantilla_cliente JSONB DEFAULT '{}'::jsonb,
+  plantilla_a4 JSONB DEFAULT '{}'::jsonb,
+  licencia JSONB DEFAULT '{}'::jsonb,
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT chk_cfg_unica CHECK (id = 1)
 );
+
+ALTER TABLE public.configuracion_pos ADD COLUMN IF NOT EXISTS paleta_id TEXT DEFAULT 'sunset';
+ALTER TABLE public.configuracion_pos ADD COLUMN IF NOT EXISTS imprimir_cliente BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.configuracion_pos ADD COLUMN IF NOT EXISTS auto_cocina BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.configuracion_pos ADD COLUMN IF NOT EXISTS auto_cobro BOOLEAN DEFAULT TRUE;
+ALTER TABLE public.configuracion_pos ADD COLUMN IF NOT EXISTS auto_precuenta BOOLEAN DEFAULT TRUE;
+ALTER TABLE public.configuracion_pos ADD COLUMN IF NOT EXISTS carpeta_descarga TEXT DEFAULT 'Descargas/Juanchos_POS';
+ALTER TABLE public.configuracion_pos ADD COLUMN IF NOT EXISTS plantilla_interno JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.configuracion_pos ADD COLUMN IF NOT EXISTS plantilla_cliente JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.configuracion_pos ADD COLUMN IF NOT EXISTS plantilla_a4 JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.configuracion_pos ADD COLUMN IF NOT EXISTS licencia JSONB DEFAULT '{}'::jsonb;
 
 INSERT INTO public.configuracion_pos (id, nombre_local, lema_local)
 VALUES (1, 'Juancho''s', 'Salchipapería & Punto de venta')
 ON CONFLICT (id) DO NOTHING;
 
 -- ----------------------------------------------------------------------------
--- 2. CATEGORÍAS DE PRODUCTOS (Carta / Catálogo)
+-- 2. CATEGORÍAS Y MODIFICADORES DE CARTA (En blanco por defecto)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.categorias (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
@@ -4594,17 +4682,16 @@ CREATE TABLE IF NOT EXISTS public.categorias (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-INSERT INTO public.categorias (nombre, orden)
-VALUES 
-  ('Salchipapas', 1),
-  ('Pollos a la Brasa', 2),
-  ('Hamburguesas & Broasters', 3),
-  ('Bebidas & Gaseosas', 4),
-  ('Guarniciones & Extras', 5)
-ON CONFLICT (nombre) DO NOTHING;
+CREATE TABLE IF NOT EXISTS public.modificadores (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  nombre TEXT NOT NULL UNIQUE,
+  orden INT DEFAULT 1,
+  activo BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
 -- ----------------------------------------------------------------------------
--- 3. INSUMOS Y MATERIAS PRIMAS DE COCINA
+-- 3. INSUMOS Y MATERIAS PRIMAS DE COCINA (En blanco por defecto)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.insumos (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
@@ -4614,20 +4701,14 @@ CREATE TABLE IF NOT EXISTS public.insumos (
   unidad TEXT NOT NULL DEFAULT 'kg',
   p_compra NUMERIC(10,2) DEFAULT 0,
   img TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-INSERT INTO public.insumos (nombre, stock, min, unidad, p_compra)
-VALUES 
-  ('Papa Amarilla / Nativa', 50.00, 10.00, 'kg', 2.80),
-  ('Salchicha Frankfurt / Artesanal', 30.00, 5.00, 'kg', 14.50),
-  ('Aceite Vegetal', 40.00, 8.00, 'l', 7.20),
-  ('Pollo Entero', 20.00, 4.00, 'und', 18.00),
-  ('Crema Mayonesa Casera', 15.00, 3.00, 'l', 5.00)
-ON CONFLICT (nombre) DO NOTHING;
+ALTER TABLE public.insumos ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- ----------------------------------------------------------------------------
--- 4. ALMACÉN Y PLATOS TERMINADOS (Catálogo de venta)
+-- 4. ALMACÉN Y PLATOS TERMINADOS (Enlazado a categorías y recetas JSONB)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.almacen (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
@@ -4635,7 +4716,7 @@ CREATE TABLE IF NOT EXISTS public.almacen (
   tipo TEXT NOT NULL DEFAULT 'PRODUCTO',
   nombre TEXT NOT NULL,
   descripcion TEXT NOT NULL,
-  categoria TEXT DEFAULT 'GENERAL',
+  categoria TEXT DEFAULT 'General',
   categoria_id BIGINT REFERENCES public.categorias(id) ON DELETE SET NULL,
   compatibilidad TEXT DEFAULT 'GENERAL',
   stock NUMERIC(12,2) NOT NULL DEFAULT 0,
@@ -4646,27 +4727,23 @@ CREATE TABLE IF NOT EXISTS public.almacen (
   imagen_url TEXT DEFAULT '',
   receta JSONB DEFAULT '{}'::jsonb,
   observacion TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE public.almacen ADD COLUMN IF NOT EXISTS codigo TEXT DEFAULT '';
 ALTER TABLE public.almacen ADD COLUMN IF NOT EXISTS tipo TEXT NOT NULL DEFAULT 'PRODUCTO';
 ALTER TABLE public.almacen ADD COLUMN IF NOT EXISTS nombre TEXT DEFAULT '';
-ALTER TABLE public.almacen ADD COLUMN IF NOT EXISTS categoria TEXT DEFAULT 'GENERAL';
+ALTER TABLE public.almacen ADD COLUMN IF NOT EXISTS categoria TEXT DEFAULT 'General';
+ALTER TABLE public.almacen ADD COLUMN IF NOT EXISTS categoria_id BIGINT REFERENCES public.categorias(id) ON DELETE SET NULL;
 ALTER TABLE public.almacen ADD COLUMN IF NOT EXISTS receta JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.almacen ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 CREATE INDEX IF NOT EXISTS idx_almacen_descripcion ON public.almacen (descripcion);
 CREATE INDEX IF NOT EXISTS idx_almacen_categoria ON public.almacen (categoria);
-
-INSERT INTO public.almacen (codigo, nombre, descripcion, categoria, stock, und, p_venta, detalles)
-VALUES
-  ('SAL-01', 'Salchipapa Clásica', 'Salchipapa Clásica', 'Salchipapas', 50, 'Plato', 14.00, 'Papas nativas crocantes, hot dog artesanal y todas las cremas'),
-  ('SAL-02', 'Salchipapa Especial Juancho', 'Salchipapa Especial Juancho', 'Salchipapas', 40, 'Plato', 22.00, 'Salchicha ahumada, huevo frito, queso fundido y tocino crocante'),
-  ('POL-01', '1/4 Pollo a la Brasa con Papas', '1/4 Pollo a la Brasa con Papas', 'Pollos a la Brasa', 35, 'Plato', 19.50, 'Pierna o pecho con papas fritas y ensalada fresca'),
-  ('BEB-01', 'Inca Kola 500ml', 'Inca Kola 500ml', 'Bebidas & Gaseosas', 60, 'Botella', 4.50, 'Gaseosa helada o al tiempo')
-ON CONFLICT DO NOTHING;
+CREATE INDEX IF NOT EXISTS idx_almacen_categoria_id ON public.almacen (categoria_id);
 
 -- ----------------------------------------------------------------------------
--- 5. AMBIENTES Y MESAS DE SALÓN
+-- 5. AMBIENTES Y MESAS DE SALÓN (Solo Salón Principal y 0 mesas por defecto)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.ambientes (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
@@ -4682,17 +4759,31 @@ ON CONFLICT (id) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS public.mesas (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  ambiente_id BIGINT REFERENCES public.ambientes(id) ON DELETE CASCADE,
+  ambiente_id BIGINT NOT NULL REFERENCES public.ambientes(id) ON DELETE CASCADE,
+  numero TEXT DEFAULT '1',
   nombre TEXT NOT NULL,
   capacidad INT DEFAULT 4,
   x INT DEFAULT 0,
   y INT DEFAULT 0,
   estado TEXT DEFAULT 'libre',
+  nota_reserva TEXT DEFAULT '',
+  desde BIGINT,
+  items JSONB DEFAULT '[]'::jsonb,
   cuenta JSONB DEFAULT '{}'::jsonb,
+  pagado NUMERIC(10,2) DEFAULT 0,
+  descuento NUMERIC(5,2) DEFAULT 0,
+  cocina_entregado BOOLEAN DEFAULT FALSE,
   pagada_ocupada BOOLEAN DEFAULT FALSE,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE public.mesas ADD COLUMN IF NOT EXISTS numero TEXT DEFAULT '1';
+ALTER TABLE public.mesas ADD COLUMN IF NOT EXISTS nota_reserva TEXT DEFAULT '';
+ALTER TABLE public.mesas ADD COLUMN IF NOT EXISTS desde BIGINT;
+ALTER TABLE public.mesas ADD COLUMN IF NOT EXISTS items JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.mesas ADD COLUMN IF NOT EXISTS pagado NUMERIC(10,2) DEFAULT 0;
+ALTER TABLE public.mesas ADD COLUMN IF NOT EXISTS descuento NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE public.mesas ADD COLUMN IF NOT EXISTS cocina_entregado BOOLEAN DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_mesas_ambiente ON public.mesas (ambiente_id);
 
 -- ----------------------------------------------------------------------------
@@ -4700,6 +4791,7 @@ CREATE INDEX IF NOT EXISTS idx_mesas_ambiente ON public.mesas (ambiente_id);
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.envios (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  nombre TEXT DEFAULT '',
   cliente TEXT NOT NULL,
   telefono TEXT DEFAULT '',
   direccion TEXT NOT NULL,
@@ -4710,14 +4802,21 @@ CREATE TABLE IF NOT EXISTS public.envios (
   items JSONB DEFAULT '[]'::jsonb,
   total NUMERIC(10,2) DEFAULT 0,
   pagado NUMERIC(10,2) DEFAULT 0,
+  descuento NUMERIC(5,2) DEFAULT 0,
   cocina_entregado BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  pagado_finalizado BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE public.envios ADD COLUMN IF NOT EXISTS nombre TEXT DEFAULT '';
+ALTER TABLE public.envios ADD COLUMN IF NOT EXISTS descuento NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE public.envios ADD COLUMN IF NOT EXISTS pagado_finalizado BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.envios ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 CREATE INDEX IF NOT EXISTS idx_envios_estado ON public.envios (estado);
 
 -- ----------------------------------------------------------------------------
--- 7. TABLERO DE COCINA (Órdenes y Comandas activas)
+-- 7. TABLERO DE COCINA (Órdenes y Comandas activas / En espera)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.ordenes_cocina (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
@@ -4728,10 +4827,16 @@ CREATE TABLE IF NOT EXISTS public.ordenes_cocina (
   subtitulo TEXT DEFAULT '',
   items JSONB DEFAULT '[]'::jsonb,
   estado TEXT DEFAULT 'pendiente',
+  pagado BOOLEAN DEFAULT FALSE,
+  entregado BOOLEAN DEFAULT FALSE,
   archivado BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE public.ordenes_cocina ADD COLUMN IF NOT EXISTS pagado BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.ordenes_cocina ADD COLUMN IF NOT EXISTS entregado BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.ordenes_cocina ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 CREATE INDEX IF NOT EXISTS idx_ordenes_cocina_estado ON public.ordenes_cocina (estado, archivado);
 
 -- ----------------------------------------------------------------------------
@@ -4750,50 +4855,97 @@ CREATE TABLE IF NOT EXISTS public.clientes (
 CREATE INDEX IF NOT EXISTS idx_clientes_nombre ON public.clientes (nombre);
 
 -- ----------------------------------------------------------------------------
--- 9. USUARIOS Y PERMISOS DEL POS
+-- 9. USUARIOS Y PERMISOS DEL POS (Solo usuario maestro WILLOSIRIS)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.usuarios_pos (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
   rol TEXT NOT NULL DEFAULT 'caja',
   pin_hash TEXT NOT NULL,
+  pin_len INT NOT NULL DEFAULT 6,
   clave_secreta_hash TEXT DEFAULT '',
+  es_maestro BOOLEAN DEFAULT FALSE,
   foto_url TEXT DEFAULT '',
   permisos JSONB DEFAULT '[]'::jsonb,
   activo BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  ultimo_acceso TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-INSERT INTO public.usuarios_pos (username, rol, pin_hash, clave_secreta_hash, foto_url, permisos, activo)
+ALTER TABLE public.usuarios_pos ADD COLUMN IF NOT EXISTS pin_len INT NOT NULL DEFAULT 6;
+ALTER TABLE public.usuarios_pos ADD COLUMN IF NOT EXISTS es_maestro BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.usuarios_pos ADD COLUMN IF NOT EXISTS ultimo_acceso TIMESTAMPTZ;
+ALTER TABLE public.usuarios_pos ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+INSERT INTO public.usuarios_pos (username, rol, pin_hash, pin_len, clave_secreta_hash, es_maestro, foto_url, permisos, activo)
 VALUES (
   'WILLOSIRIS',
   'admin',
   '749696',
+  6,
   '749696',
+  TRUE,
   '',
-  '["panel.acceder","caja.cobrar","mesas.trasladar","carta.administrar","inventario.ver","reportes.ver","impresion.permitir","ajustes.administrar"]'::jsonb,
-  true
+  '["pedidos.inicio","salon.operar","mesas.modificar","envios.operar","comandera.operar","caja.cobrar","turno.cerrar","reportes.editar","impresion.permitir","productos.editar","carta.administrar","ajustes.administrar"]'::jsonb,
+  TRUE
 )
 ON CONFLICT (username) DO NOTHING;
 
 -- ----------------------------------------------------------------------------
--- 10. VENTAS Y COMPROBANTES DE PAGO
+-- 10. CIERRES DE CAJA Y VENTAS POS
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.ventas_pos (
+CREATE TABLE IF NOT EXISTS public.cierres_caja (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  origen TEXT NOT NULL DEFAULT 'Salón',
-  comprobante TEXT NOT NULL DEFAULT 'Ticket Interno',
-  cliente TEXT NOT NULL DEFAULT 'Público general',
-  metodo_pago TEXT NOT NULL DEFAULT 'Efectivo',
-  referencia TEXT DEFAULT '',
-  total NUMERIC(10,2) NOT NULL DEFAULT 0,
-  usuario TEXT NOT NULL DEFAULT 'WILLOSIRIS',
-  detalle JSONB DEFAULT '[]'::jsonb,
+  nombre TEXT NOT NULL,
+  abierto_en TIMESTAMPTZ,
+  cerrado_en TIMESTAMPTZ DEFAULT NOW(),
+  abierto_por TEXT DEFAULT 'WILLOSIRIS',
+  cerrado_por TEXT DEFAULT 'WILLOSIRIS',
+  arqueo_contado NUMERIC(10,2) DEFAULT 0,
+  total_ventas NUMERIC(10,2) DEFAULT 0,
+  efectivo NUMERIC(10,2) DEFAULT 0,
+  yape NUMERIC(10,2) DEFAULT 0,
+  diferencia NUMERIC(10,2) DEFAULT 0,
+  detalle JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS public.ventas_pos (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  turno_id BIGINT,
+  origen TEXT NOT NULL DEFAULT 'Salón',
+  comprobante TEXT NOT NULL DEFAULT 'Ticket Interno',
+  doc_tipo TEXT DEFAULT '',
+  doc_num TEXT DEFAULT '',
+  cliente TEXT NOT NULL DEFAULT 'Público general',
+  metodo_pago TEXT NOT NULL DEFAULT 'Efectivo',
+  referencia TEXT DEFAULT '',
+  subtotal NUMERIC(10,2) DEFAULT 0,
+  igv NUMERIC(10,2) DEFAULT 0,
+  total NUMERIC(10,2) NOT NULL DEFAULT 0,
+  recibido NUMERIC(10,2) DEFAULT 0,
+  vuelto NUMERIC(10,2) DEFAULT 0,
+  etiqueta TEXT DEFAULT '',
+  usuario TEXT NOT NULL DEFAULT 'WILLOSIRIS',
+  detalle JSONB DEFAULT '[]'::jsonb,
+  fecha TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.ventas_pos ADD COLUMN IF NOT EXISTS turno_id BIGINT;
+ALTER TABLE public.ventas_pos ADD COLUMN IF NOT EXISTS doc_tipo TEXT DEFAULT '';
+ALTER TABLE public.ventas_pos ADD COLUMN IF NOT EXISTS doc_num TEXT DEFAULT '';
+ALTER TABLE public.ventas_pos ADD COLUMN IF NOT EXISTS subtotal NUMERIC(10,2) DEFAULT 0;
+ALTER TABLE public.ventas_pos ADD COLUMN IF NOT EXISTS igv NUMERIC(10,2) DEFAULT 0;
+ALTER TABLE public.ventas_pos ADD COLUMN IF NOT EXISTS recibido NUMERIC(10,2) DEFAULT 0;
+ALTER TABLE public.ventas_pos ADD COLUMN IF NOT EXISTS vuelto NUMERIC(10,2) DEFAULT 0;
+ALTER TABLE public.ventas_pos ADD COLUMN IF NOT EXISTS etiqueta TEXT DEFAULT '';
+ALTER TABLE public.ventas_pos ADD COLUMN IF NOT EXISTS fecha TIMESTAMPTZ DEFAULT NOW();
+
 CREATE INDEX IF NOT EXISTS idx_ventas_pos_created_at ON public.ventas_pos (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_ventas_pos_usuario ON public.ventas_pos (usuario);
+CREATE INDEX IF NOT EXISTS idx_ventas_pos_turno ON public.ventas_pos (turno_id);
 
 -- ----------------------------------------------------------------------------
 -- 11. MOVIMIENTOS DE KARDEX E INVENTARIO
@@ -4809,7 +4961,7 @@ CREATE TABLE IF NOT EXISTS public.movimientos_inventario (
 );
 
 -- ----------------------------------------------------------------------------
--- 12. RESPALDO Y ESTADO MAESTRO CENTRAL (Sincronización multi-dispositivo)
+-- 12. ESTADO MAESTRO CENTRAL PARA SINCRONIZACIÓN EN VIVO MULTI-DISPOSITIVO
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.respaldos_json (
   id BIGINT PRIMARY KEY DEFAULT 1,
@@ -4819,6 +4971,18 @@ CREATE TABLE IF NOT EXISTS public.respaldos_json (
 );
 
 CREATE INDEX IF NOT EXISTS idx_respaldos_json_updated_at ON public.respaldos_json (updated_at DESC);
+
+-- Triggers automáticos updated_at
+DO $$
+DECLARE
+  t TEXT;
+BEGIN
+  FOR t IN SELECT unnest(ARRAY['configuracion_pos','insumos','almacen','mesas','envios','ordenes_cocina','usuarios_pos','respaldos_json'])
+  LOOP
+    EXECUTE format('DROP TRIGGER IF EXISTS trg_%I_updated_at ON public.%I;', t, t);
+    EXECUTE format('CREATE TRIGGER trg_%I_updated_at BEFORE UPDATE ON public.%I FOR EACH ROW EXECUTE FUNCTION public.fn_set_updated_at();', t, t);
+  END LOOP;
+END $$;
 
 -- ----------------------------------------------------------------------------
 -- 13. PERMISOS REST v1 (anon, authenticated y service_role)
@@ -4831,60 +4995,32 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authentic
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
 
 -- ----------------------------------------------------------------------------
--- 14. POLÍTICAS ROW LEVEL SECURITY (RLS)
+-- 14. POLÍTICAS ROW LEVEL SECURITY (RLS) + REALTIME MULTI-DISPOSITIVO
 -- ----------------------------------------------------------------------------
-ALTER TABLE public.configuracion_pos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.categorias ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.insumos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.almacen ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ambientes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.mesas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.envios ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ordenes_cocina ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.clientes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.usuarios_pos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ventas_pos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.movimientos_inventario ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.respaldos_json ENABLE ROW LEVEL SECURITY;
+DO $$
+DECLARE
+  t TEXT;
+  tablas TEXT[] := ARRAY[
+    'configuracion_pos','categorias','modificadores','insumos','almacen',
+    'ambientes','mesas','envios','ordenes_cocina','clientes','usuarios_pos',
+    'cierres_caja','ventas_pos','movimientos_inventario','respaldos_json'
+  ];
+BEGIN
+  FOREACH t IN ARRAY tablas LOOP
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', t);
+    EXECUTE format('DROP POLICY IF EXISTS "pos_%I_all" ON public.%I;', t, t);
+    EXECUTE format('CREATE POLICY "pos_%I_all" ON public.%I FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);', t, t);
+    BEGIN
+      EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I;', t);
+    EXCEPTION WHEN duplicate_object THEN
+      NULL;
+    END;
+  END LOOP;
+END $$;
 
-DROP POLICY IF EXISTS "pos_configuracion_all" ON public.configuracion_pos;
-CREATE POLICY "pos_configuracion_all" ON public.configuracion_pos FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "pos_categorias_all" ON public.categorias;
-CREATE POLICY "pos_categorias_all" ON public.categorias FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "pos_insumos_all" ON public.insumos;
-CREATE POLICY "pos_insumos_all" ON public.insumos FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "pos_almacen_all" ON public.almacen;
-CREATE POLICY "pos_almacen_all" ON public.almacen FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "pos_ambientes_all" ON public.ambientes;
-CREATE POLICY "pos_ambientes_all" ON public.ambientes FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "pos_mesas_all" ON public.mesas;
-CREATE POLICY "pos_mesas_all" ON public.mesas FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "pos_envios_all" ON public.envios;
-CREATE POLICY "pos_envios_all" ON public.envios FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "pos_ordenes_cocina_all" ON public.ordenes_cocina;
-CREATE POLICY "pos_ordenes_cocina_all" ON public.ordenes_cocina FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "pos_clientes_all" ON public.clientes;
-CREATE POLICY "pos_clientes_all" ON public.clientes FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "pos_usuarios_pos_all" ON public.usuarios_pos;
-CREATE POLICY "pos_usuarios_pos_all" ON public.usuarios_pos FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "pos_ventas_pos_all" ON public.ventas_pos;
-CREATE POLICY "pos_ventas_pos_all" ON public.ventas_pos FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "pos_movimientos_all" ON public.movimientos_inventario;
-CREATE POLICY "pos_movimientos_all" ON public.movimientos_inventario FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "pos_respaldos_json_all" ON public.respaldos_json;
-CREATE POLICY "pos_respaldos_json_all" ON public.respaldos_json FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+-- Sincronizar secuencias Identity después de resets o migraciones
+SELECT setval(pg_get_serial_sequence('public.ambientes', 'id'), COALESCE((SELECT MAX(id) FROM public.ambientes), 1), true);
+SELECT setval(pg_get_serial_sequence('public.usuarios_pos', 'id'), COALESCE((SELECT MAX(id) FROM public.usuarios_pos), 1), true);
 
 -- Notificar a PostgREST para recargar el esquema inmediatamente
 NOTIFY pgrst, 'reload schema';`;
@@ -4984,10 +5120,14 @@ async function probarConexionSupabase(silencioso = false) {
     return;
   }
   if (!silencioso && $('#supaMensajeEstado')) {
-    $('#supaMensajeEstado').textContent = 'Midiendo latencia y verificando tablas en Supabase REST v1...';
+    $('#supaMensajeEstado').textContent = 'Midiendo latencia y verificando todas las tablas en Supabase REST v1...';
   }
-  
-  const tablas = ['respaldos_json', 'almacen', 'clientes', 'usuarios_pos', 'ventas_pos', 'categorias', 'insumos', 'mesas'];
+
+  const tablas = [
+    'respaldos_json', 'configuracion_pos', 'almacen', 'clientes', 'usuarios_pos',
+    'ventas_pos', 'categorias', 'modificadores', 'insumos', 'ambientes',
+    'mesas', 'envios', 'ordenes_cocina', 'cierres_caja', 'movimientos_inventario'
+  ];
   const t0 = performance.now();
   try {
     const checks = await Promise.all(
@@ -5013,29 +5153,27 @@ async function probarConexionSupabase(silencioso = false) {
       })
     );
     const latenciaMs = Math.max(1, Math.round(performance.now() - t0));
-    // Conexión exitosa si al menos las 5 tablas núcleo responden OK
     const coreTablas = ['respaldos_json', 'almacen', 'clientes', 'usuarios_pos', 'ventas_pos'];
     const coreOk = coreTablas.every(t => checks.find(c => c.tabla === t)?.ok);
     const okCount = checks.filter(r => r.ok).length;
-    
+
     DB.supabase.url = rawUrl;
     DB.supabase.anonKey = key;
     DB.supabase.conectado = coreOk;
-    DB.supabase.ultimaSync = new Date().toISOString();
-    
+
     if (coreOk) {
       supaLiveInfo = {
         verificado: true,
         latenciaMs,
         conteos: {
-          respaldos: checks.find(c => c.tabla === 'respaldos_json')?.total ?? 1,
+          respaldos: checks.find(c => c.tabla === 'respaldos_json')?.total ?? 0,
           almacen: checks.find(c => c.tabla === 'almacen')?.total ?? 0,
           clientes: checks.find(c => c.tabla === 'clientes')?.total ?? 0,
           usuarios: checks.find(c => c.tabla === 'usuarios_pos')?.total ?? 0,
           ventas: checks.find(c => c.tabla === 'ventas_pos')?.total ?? 0,
-          categorias: checks.find(c => c.tabla === 'categorias')?.total ?? DB.categorias.length,
-          insumos: checks.find(c => c.tabla === 'insumos')?.total ?? Object.keys(DB.insumos).length,
-          mesas: checks.find(c => c.tabla === 'mesas')?.total ?? DB.mesas.length
+          categorias: checks.find(c => c.tabla === 'categorias')?.total ?? 0,
+          insumos: checks.find(c => c.tabla === 'insumos')?.total ?? 0,
+          mesas: checks.find(c => c.tabla === 'mesas')?.total ?? 0
         },
         ultimoError: ''
       };
@@ -5043,7 +5181,7 @@ async function probarConexionSupabase(silencioso = false) {
       actualizarRelojYConexion();
       renderSupabaseAjustes();
       if (!silencioso) {
-        toast(`Conexión con Supabase verificada (${latenciaMs} ms · ${okCount}/${tablas.length} tablas activas)`);
+        toast(`Conexión verificada (${latenciaMs} ms · ${okCount}/${tablas.length} tablas activas)`);
       }
     } else {
       const fallidas = checks.filter(r => !r.ok).map(r => r.tabla).join(', ');
@@ -5069,34 +5207,79 @@ async function probarConexionSupabase(silencioso = false) {
   }
 }
 
+function registrarBorradoSupabase(tabla, columna, valor) {
+  if (!DB?.supabase || !tabla || valor === undefined || valor === null || valor === '') return;
+  if (!DB.supabase.pendientesBorrar || typeof DB.supabase.pendientesBorrar !== 'object') {
+    DB.supabase.pendientesBorrar = {};
+  }
+  const arr = Array.isArray(DB.supabase.pendientesBorrar[tabla]) ? DB.supabase.pendientesBorrar[tabla] : [];
+  const item = { col: columna, val: valor };
+  if (!arr.some(x => x.col === item.col && String(x.val) === String(item.val))) {
+    arr.push(item);
+  }
+  DB.supabase.pendientesBorrar[tabla] = arr;
+}
+
+async function flushBorradosSupabase(restBase, key) {
+  const pend = DB.supabase?.pendientesBorrar;
+  if (!pend || typeof pend !== 'object') return;
+  for (const [tabla, items] of Object.entries(pend)) {
+    if (!Array.isArray(items) || !items.length) continue;
+    const restantes = [];
+    for (const it of items) {
+      try {
+        const res = await fetch(`${restBase}/${tabla}?${encodeURIComponent(it.col)}=eq.${encodeURIComponent(String(it.val))}`, {
+          method: 'DELETE',
+          headers: headersSupabase(key, { Prefer: 'return=minimal' })
+        });
+        if (!res.ok) restantes.push(it);
+      } catch (_) {
+        restantes.push(it);
+      }
+    }
+    if (restantes.length) pend[tabla] = restantes;
+    else delete pend[tabla];
+  }
+}
+
 async function enviarVentaRealASupabase(venta) {
   if (!DB.supabase?.url || !DB.supabase?.anonKey) return;
   const restBase = obtenerRestBaseSupabase(DB.supabase.url);
   const key = DB.supabase.anonKey;
+  if (!restBase) return;
   try {
     const row = {
+      id: venta.id,
+      turno_id: venta.turnoId || null,
       origen: venta.origenTipo || 'Salón',
       comprobante: venta.comprobante || 'Ticket Interno',
+      doc_tipo: venta.docTipo || '',
+      doc_num: venta.docNum || '',
       cliente: venta.cliente || 'Público general',
       metodo_pago: (venta.metodo === 'Yape' ? 'Yape' : 'Efectivo'),
       referencia: venta.referencia || (venta.metodo === 'Yape' ? 'Yape directo' : 'Efectivo'),
+      subtotal: Number(venta.subtotal) || 0,
+      igv: Number(venta.igv) || 0,
       total: Number(venta.total) || 0,
+      recibido: Number(venta.recibido) || 0,
+      vuelto: Number(venta.vuelto) || 0,
+      etiqueta: venta.etiqueta || '',
       usuario: venta.usuario || sesion?.nombre || 'WILLOSIRIS',
-      detalle: venta.items || []
+      detalle: venta.items || [],
+      fecha: venta.fecha || new Date().toISOString()
     };
-    const res = await fetch(`${restBase}/ventas_pos`, {
+    const res = await fetch(`${restBase}/ventas_pos?on_conflict=id`, {
       method: 'POST',
       headers: headersSupabase(key, {
         'Content-Type': 'application/json',
-        Prefer: 'return=minimal'
+        Prefer: 'resolution=merge-duplicates,return=minimal'
       }),
       body: JSON.stringify(row)
     });
     if (res.ok) {
       DB.supabase.conectado = true;
-      DB.supabase.ultimaSync = new Date().toISOString();
       if (supaLiveInfo.conteos) {
-        supaLiveInfo.conteos.ventas = (supaLiveInfo.conteos.ventas || 0) + 1;
+        supaLiveInfo.conteos.ventas = DB.ventas.length;
       }
       renderSupabaseLiveStats();
       actualizarRelojYConexion();
@@ -5106,19 +5289,39 @@ async function enviarVentaRealASupabase(venta) {
   }
 }
 
-function programarSyncSupabase() {
+function programarSyncSupabase(inmediato = false) {
   if (DB.supabase?.autoSync === false || !DB.supabase?.url || !DB.supabase?.anonKey) return;
   if (supaSyncTimer) clearTimeout(supaSyncTimer);
   supaSyncTimer = setTimeout(() => {
+    supaSyncTimer = null;
     sincronizarConSupabaseEnTiempoReal();
-  }, 600);
+  }, inmediato ? 40 : 420);
+}
+
+async function upsertSupabase(restBase, key, tabla, conflictCol, rows) {
+  if (!Array.isArray(rows) || !rows.length) return true;
+  try {
+    const qs = conflictCol ? `?on_conflict=${encodeURIComponent(conflictCol)}` : '';
+    const prefer = conflictCol ? 'resolution=merge-duplicates,return=minimal' : 'return=minimal';
+    const res = await fetch(`${restBase}/${tabla}${qs}`, {
+      method: 'POST',
+      headers: headersSupabase(key, {
+        'Content-Type': 'application/json',
+        Prefer: prefer
+      }),
+      body: JSON.stringify(rows)
+    });
+    return res.ok;
+  } catch (_) {
+    return false;
+  }
 }
 
 async function sincronizarConSupabaseEnTiempoReal() {
   if (DB.supabase?.autoSync === false) return;
   const restBase = obtenerRestBaseSupabase(DB.supabase?.url);
   const key = DB.supabase?.anonKey;
-  if (!restBase || !key) return;
+  if (!restBase || !key || key.startsWith('sb_secret_')) return;
   if (supaSyncEnCurso) {
     supaSyncPendiente = true;
     return;
@@ -5127,45 +5330,76 @@ async function sincronizarConSupabaseEnTiempoReal() {
   supaSyncPendiente = false;
 
   try {
-    // 1. Sincronizar usuarios (upsert por username)
+    // 0. Ejecutar eliminaciones pendientes antes de cualquier upsert
+    await flushBorradosSupabase(restBase, key);
+
+    // 1. Configuración general y marca
+    await upsertSupabase(restBase, key, 'configuracion_pos', 'id', [{
+      id: 1,
+      nombre_local: DB.config?.nombreLocal || "Juancho's",
+      lema_local: DB.config?.lemaLocal || 'Salchipapería & Punto de venta',
+      ruc: DB.config?.ruc || '',
+      logo_principal: DB.config?.logoPrincipal || 'logo.png',
+      favicon: DB.config?.favicon || 'favicon.png',
+      tema: DB.tema || 'dark',
+      paleta_id: DB.paleta || 'sunset',
+      imprimir_cliente: !!DB.impresion?.usarTicketCliente,
+      auto_cocina: !!DB.impresion?.autoCocina,
+      auto_cobro: DB.impresion?.autoCobro !== false,
+      auto_precuenta: DB.impresion?.autoPrecuenta !== false,
+      carpeta_descarga: DB.config?.carpetaDescarga || 'Descargas/Juanchos_POS',
+      tasa_igv: Number(DB.config?.igv) || 0.18,
+      moneda: 'S/',
+      plantilla_interno: DB.impresion?.plantillaInterno || {},
+      plantilla_cliente: DB.impresion?.plantillaCliente || {},
+      plantilla_a4: DB.impresion?.plantillaA4 || {},
+      licencia: DB.licencia || {}
+    }]);
+
+    // 2. Usuarios y permisos
     if (Array.isArray(DB.usuarios) && DB.usuarios.length) {
-      const usuariosSync = DB.usuarios.map(u => ({
+      await upsertSupabase(restBase, key, 'usuarios_pos', 'username', DB.usuarios.map(u => ({
         username: u.nombre,
         rol: u.rol || 'caja',
         pin_hash: u.pinHash || '',
+        pin_len: u.pinLen || 6,
         clave_secreta_hash: u.claveSecretaHash || '',
+        es_maestro: !!u.esMaestro,
         foto_url: u.foto || '',
         permisos: u.permisos || [],
-        activo: u.activo !== false
-      }));
-      await fetch(`${restBase}/usuarios_pos?on_conflict=username`, {
-        method: 'POST',
-        headers: headersSupabase(key, {
-          'Content-Type': 'application/json',
-          Prefer: 'resolution=merge-duplicates,return=minimal'
-        }),
-        body: JSON.stringify(usuariosSync)
-      }).catch(() => {});
+        activo: u.activo !== false,
+        ultimo_acceso: u.ultimoAcceso || null
+      })));
     }
 
-    // 2. Sincronizar categorías (upsert por nombre)
+    // 3. Categorías y Modificadores
+    const mapaCategoriasId = {};
     if (Array.isArray(DB.categorias) && DB.categorias.length) {
-      const catsSync = DB.categorias.map((c, i) => ({
+      await upsertSupabase(restBase, key, 'categorias', 'nombre', DB.categorias.map((c, i) => ({
         nombre: c,
         orden: i + 1,
         activo: true
-      }));
-      await fetch(`${restBase}/categorias?on_conflict=nombre`, {
-        method: 'POST',
-        headers: headersSupabase(key, {
-          'Content-Type': 'application/json',
-          Prefer: 'resolution=merge-duplicates,return=minimal'
-        }),
-        body: JSON.stringify(catsSync)
-      }).catch(() => {});
+      })));
+      try {
+        const resCats = await fetch(`${restBase}/categorias?select=id,nombre`, { headers: headersSupabase(key) });
+        if (resCats.ok) {
+          const filasCat = await resCats.json();
+          if (Array.isArray(filasCat)) {
+            filasCat.forEach(c => { if (c?.nombre) mapaCategoriasId[c.nombre] = c.id; });
+          }
+        }
+      } catch (_) {}
     }
 
-    // 3. Sincronizar insumos (upsert por nombre)
+    if (Array.isArray(DB.modificadores) && DB.modificadores.length) {
+      await upsertSupabase(restBase, key, 'modificadores', 'nombre', DB.modificadores.map((m, i) => ({
+        nombre: m,
+        orden: i + 1,
+        activo: true
+      })));
+    }
+
+    // 4. Insumos de cocina
     if (DB.insumos && typeof DB.insumos === 'object') {
       const insSync = Object.entries(DB.insumos).map(([nom, i]) => ({
         nombre: nom,
@@ -5175,27 +5409,19 @@ async function sincronizarConSupabaseEnTiempoReal() {
         p_compra: Number(i.pCompra) || 0,
         img: i.img || ''
       }));
-      if (insSync.length) {
-        await fetch(`${restBase}/insumos?on_conflict=nombre`, {
-          method: 'POST',
-          headers: headersSupabase(key, {
-            'Content-Type': 'application/json',
-            Prefer: 'resolution=merge-duplicates,return=minimal'
-          }),
-          body: JSON.stringify(insSync)
-        }).catch(() => {});
-      }
+      await upsertSupabase(restBase, key, 'insumos', 'nombre', insSync);
     }
 
-    // 4. Sincronizar platos en almacen (upsert por id)
+    // 5. Productos / Carta (enlazados con categoria_id y receta JSONB)
     if (Array.isArray(DB.productos) && DB.productos.length) {
-      const filasAlmacen = DB.productos.map(p => ({
+      await upsertSupabase(restBase, key, 'almacen', 'id', DB.productos.map(p => ({
         id: p.id,
         codigo: p.codigo || `PROD-${p.id}`,
         tipo: 'PRODUCTO',
         nombre: p.nombre,
         descripcion: p.nombre,
         categoria: p.cat || 'General',
+        categoria_id: mapaCategoriasId[p.cat] || null,
         compatibilidad: 'Carta',
         stock: p.stock ?? 50,
         und: p.und || 'Plato',
@@ -5205,161 +5431,455 @@ async function sincronizarConSupabaseEnTiempoReal() {
         imagen_url: p.img || '',
         receta: DB.recetas?.[p.id] || {},
         observacion: 'Carta POS'
-      }));
-      await fetch(`${restBase}/almacen?on_conflict=id`, {
-        method: 'POST',
-        headers: headersSupabase(key, {
-          'Content-Type': 'application/json',
-          Prefer: 'resolution=merge-duplicates,return=minimal'
-        }),
-        body: JSON.stringify(filasAlmacen)
-      }).catch(() => {});
+      })));
     }
 
-    // 5. Sincronizar mesas y ambientes
+    // 6. Ambientes SIEMPRE antes de Mesas para respetar la FK ambiente_id
+    if (Array.isArray(DB.ambientes) && DB.ambientes.length) {
+      await upsertSupabase(restBase, key, 'ambientes', 'id', DB.ambientes.map((a, idx) => ({
+        id: a.id,
+        nombre: a.nombre,
+        orden: a.orden || idx + 1,
+        activo: true
+      })));
+    }
+
     if (Array.isArray(DB.mesas) && DB.mesas.length) {
-      const mesasSync = DB.mesas.map(m => ({
+      await upsertSupabase(restBase, key, 'mesas', 'id', DB.mesas.map(m => ({
         id: m.id,
         ambiente_id: m.ambienteId || 1,
+        numero: String(m.numero || m.id),
         nombre: m.nombre,
-        capacidad: m.cap || 4,
+        capacidad: m.capacidad || m.cap || 4,
         x: m.x || 0,
         y: m.y || 0,
         estado: m.estado || 'libre',
+        nota_reserva: m.notaReserva || '',
+        desde: m.desde || null,
+        items: m.items || [],
         cuenta: m.cuenta || {},
+        pagado: Number(m.pagado) || 0,
+        descuento: Number(m.desc) || 0,
+        cocina_entregado: !!m.cocinaEntregado,
         pagada_ocupada: !!m.pagadaOcupada
-      }));
-      await fetch(`${restBase}/mesas?on_conflict=id`, {
-        method: 'POST',
-        headers: headersSupabase(key, {
-          'Content-Type': 'application/json',
-          Prefer: 'resolution=merge-duplicates,return=minimal'
-        }),
-        body: JSON.stringify(mesasSync)
-      }).catch(() => {});
+      })));
     }
 
-    // 6. Sincronizar clientes desde envíos
+    // 7. Envíos a domicilio, clientes y tablero de cocina
     if (Array.isArray(DB.envios) && DB.envios.length) {
-      const clientesSync = DB.envios.slice(0, 50).map(ev => ({
+      await upsertSupabase(restBase, key, 'envios', 'id', DB.envios.map(ev => ({
+        id: ev.id,
+        nombre: ev.nombre || `Envío #${ev.id}`,
+        cliente: ev.cliente || 'Cliente Delivery',
+        telefono: ev.telefono || '',
+        direccion: ev.direccion || 'Sin dirección',
+        estado: ev.pagadoFinalizado ? 'entregado' : 'pendiente',
+        estado_pago: ev.estadoPago || 'contraentrega_efectivo',
+        referencia_yape: ev.referenciaYape || '',
+        notas: ev.notas || '',
+        items: ev.items || [],
+        total: calcularTotales(ev).total,
+        pagado: Number(ev.pagado) || 0,
+        descuento: Number(ev.desc) || 0,
+        cocina_entregado: !!ev.cocinaEntregado,
+        pagado_finalizado: !!ev.pagadoFinalizado
+      })));
+      await upsertSupabase(restBase, key, 'clientes', 'id', DB.envios.slice(0, 50).map(ev => ({
         id: ev.id,
         origen: 'DELIVERY',
         nombre: ev.cliente || 'Cliente Delivery',
         telefono: ev.telefono || '',
         direccion: ev.direccion || ''
-      }));
-      await fetch(`${restBase}/clientes?on_conflict=id`, {
-        method: 'POST',
-        headers: headersSupabase(key, {
-          'Content-Type': 'application/json',
-          Prefer: 'resolution=merge-duplicates,return=minimal'
-        }),
-        body: JSON.stringify(clientesSync)
-      }).catch(() => {});
+      })));
     }
 
-    // 7. Respaldo snapshot a respaldos_json:
-    // Se realiza de acuerdo a la frecuencia configurada (sin saturar la tabla con filas innecesarias)
-    const freq = DB.supabase.backupInterval || '1h';
-    let debeSubirSnapshot = false;
-    if (freq === '30m') {
-      const lapso = 30 * 60 * 1000;
-      if (!DB.supabase.ultimoRespaldoAuto || (Date.now() - DB.supabase.ultimoRespaldoAuto) >= lapso) {
-        debeSubirSnapshot = true;
-      }
-    } else if (freq === '1h') {
-      const lapso = 60 * 60 * 1000;
-      if (!DB.supabase.ultimoRespaldoAuto || (Date.now() - DB.supabase.ultimoRespaldoAuto) >= lapso) {
-        debeSubirSnapshot = true;
-      }
+    if (Array.isArray(DB.ordenesCocina) && DB.ordenesCocina.length) {
+      await upsertSupabase(restBase, key, 'ordenes_cocina', 'key', DB.ordenesCocina.slice(-80).map(o => ({
+        key: o.key,
+        tipo: o.tipo || 'mesa',
+        cuenta_id: Number(o.cuentaId) || 0,
+        titulo: o.titulo || 'Orden',
+        subtitulo: o.subtitulo || '',
+        items: o.items || [],
+        estado: o.entregado ? 'entregado' : 'pendiente',
+        pagado: !!o.pagado,
+        entregado: !!o.entregado,
+        archivado: !!o.archivado
+      })));
     }
 
-    if (debeSubirSnapshot) {
-      const payloadSeguro = {
-        ...DB,
-        supabase: { ...DB.supabase, secretKey: '' }
-      };
-      await fetch(`${restBase}/respaldos_json?on_conflict=id`, {
-        method: 'POST',
-        headers: headersSupabase(key, {
-          'Content-Type': 'application/json',
-          Prefer: 'resolution=merge-duplicates,return=minimal'
-        }),
-        body: JSON.stringify({
-          id: 1,
-          nombre_local: DB.config?.nombreLocal || "Juancho's",
-          payload: payloadSeguro,
-          updated_at: new Date().toISOString()
-        })
-      }).catch(() => {});
+    // 8. Ventas, cierres y movimientos recientes
+    if (Array.isArray(DB.cierres) && DB.cierres.length) {
+      await upsertSupabase(restBase, key, 'cierres_caja', 'id', DB.cierres.slice(0, 30).map(c => ({
+        id: c.id,
+        nombre: c.nombre || `Turno #${c.id}`,
+        abierto_en: c.abiertoEn || null,
+        cerrado_en: c.cerradoEn || new Date().toISOString(),
+        abierto_por: c.abiertoPor || 'WILLOSIRIS',
+        cerrado_por: c.cerradoPor || 'WILLOSIRIS',
+        arqueo_contado: Number(c.arqueoContado) || 0,
+        total_ventas: Number(c.total) || 0,
+        efectivo: Number(c.efectivo) || 0,
+        yape: Number(c.yape) || 0,
+        diferencia: Number(c.diferencia) || 0,
+        detalle: c
+      })));
+    }
+
+    if (Array.isArray(DB.ventas) && DB.ventas.length) {
+      await upsertSupabase(restBase, key, 'ventas_pos', 'id', DB.ventas.slice(0, 80).map(v => ({
+        id: v.id,
+        turno_id: v.turnoId || null,
+        origen: v.origenTipo || 'Salón',
+        comprobante: v.comprobante || 'Ticket Interno',
+        doc_tipo: v.docTipo || '',
+        doc_num: v.docNum || '',
+        cliente: v.cliente || 'Público general',
+        metodo_pago: v.metodo === 'Yape' ? 'Yape' : 'Efectivo',
+        referencia: v.referencia || '',
+        subtotal: Number(v.subtotal) || 0,
+        igv: Number(v.igv) || 0,
+        total: Number(v.total) || 0,
+        recibido: Number(v.recibido) || 0,
+        vuelto: Number(v.vuelto) || 0,
+        etiqueta: v.etiqueta || '',
+        usuario: v.usuario || 'WILLOSIRIS',
+        detalle: v.items || [],
+        fecha: v.fecha || new Date().toISOString()
+      })));
+    }
+
+    if (Array.isArray(DB.movimientos) && DB.movimientos.length) {
+      await upsertSupabase(restBase, key, 'movimientos_inventario', 'id', DB.movimientos.slice(0, 60).map(m => ({
+        id: m.id,
+        fecha: m.fecha || new Date().toISOString(),
+        insumo: m.insumo || '',
+        tipo: m.tipo || 'consumo',
+        cantidad: Number(m.cantidad) || 0,
+        motivo: m.motivo || '',
+        usuario: m.usuario || 'WILLOSIRIS'
+      })));
+    }
+
+    // 9. Estado maestro multi-dispositivo (siempre actualizado al instante para otros dispositivos)
+    const nowIso = new Date().toISOString();
+    const payloadSeguro = {
+      ...DB,
+      supabase: {
+        ...DB.supabase,
+        secretKey: '',
+        pendientesBorrar: {}
+      }
+    };
+    const resSnap = await fetch(`${restBase}/respaldos_json?on_conflict=id`, {
+      method: 'POST',
+      headers: headersSupabase(key, {
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=representation'
+      }),
+      body: JSON.stringify({
+        id: 1,
+        nombre_local: DB.config?.nombreLocal || "Juancho's",
+        payload: payloadSeguro,
+        updated_at: nowIso
+      })
+    });
+
+    if (resSnap.ok) {
+      const savedArr = await resSnap.json().catch(() => null);
+      const serverUpdated = (Array.isArray(savedArr) && savedArr[0]?.updated_at) || nowIso;
+      DB.supabase.ultimaSync = serverUpdated;
       DB.supabase.ultimoRespaldoAuto = Date.now();
+    } else {
+      DB.supabase.ultimaSync = nowIso;
     }
 
     DB.supabase.conectado = true;
-    DB.supabase.ultimaSync = new Date().toISOString();
+    guardarDB({ sinSync: true });
+    actualizarRelojYConexion();
   } catch (e) {
     console.warn('Error en sincronización en tiempo real con Supabase:', e);
   } finally {
     supaSyncEnCurso = false;
     if (supaSyncPendiente) {
       supaSyncPendiente = false;
-      programarSyncSupabase();
+      programarSyncSupabase(true);
     }
   }
 }
 
-async function subirDatosSupabase() {
+function aplicarSnapshotNubeLocalmente(payload, cloudUpdated) {
+  const secretLocal = DB.supabase?.secretKey || '';
+  const autoSyncLocal = DB.supabase?.autoSync !== false;
+  const freqLocal = DB.supabase?.backupInterval || '1h';
+  const urlLocal = DB.supabase?.url || SUPABASE_DEFAULT_URL;
+  const keyLocal = DB.supabase?.anonKey || SUPABASE_DEFAULT_PUB_KEY;
+
+  DB = normalizarDB(payload);
+  DB.supabase.url = urlLocal;
+  DB.supabase.anonKey = keyLocal;
+  if (secretLocal) DB.supabase.secretKey = secretLocal;
+  DB.supabase.autoSync = autoSyncLocal;
+  DB.supabase.backupInterval = freqLocal;
+  DB.supabase.ultimaSync = cloudUpdated || new Date().toISOString();
+  DB.supabase.conectado = true;
+  DB.supabase.pendientesBorrar = {};
+
+  if (!DB.ambientes.some(a => a.id === ambienteActualId)) {
+    ambienteActualId = DB.ambientes[0]?.id || 1;
+  }
+  if (cuentaActiva.tipo === 'mesa' && !DB.mesas.some(m => m.id === cuentaActiva.id)) {
+    cuentaActiva = { tipo: null, id: null };
+  }
+  if (cuentaActiva.tipo === 'envio' && !DB.envios.some(e => e.id === cuentaActiva.id)) {
+    cuentaActiva = { tipo: null, id: null };
+  }
+
+  guardarDB({ sinSync: true });
+  aplicarTema(DB.tema, true);
+  if (typeof aplicarPaleta === 'function' && DB.paleta) aplicarPaleta(DB.paleta, true);
+  pintarMarcaLocal();
+  renderListaUsuariosAcceso();
+  renderTodo();
+}
+
+async function hidratarDesdeTablasRelacionalesSupabase(restBase, key) {
+  const getTabla = async (t, query = 'select=*&limit=500') => {
+    try {
+      const r = await fetch(`${restBase}/${t}?${query}`, { headers: headersSupabase(key) });
+      if (!r.ok) return null;
+      const j = await r.json();
+      return Array.isArray(j) ? j : null;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const [cfgRows, ambRows, mesaRows, catRows, modRows, insRows, almRows, envRows, cocRows, usrRows, venRows, cieRows, movRows] = await Promise.all([
+    getTabla('configuracion_pos', 'id=eq.1&select=*'),
+    getTabla('ambientes', 'select=*&order=orden.asc,id.asc'),
+    getTabla('mesas', 'select=*&order=id.asc'),
+    getTabla('categorias', 'select=*&order=orden.asc,id.asc'),
+    getTabla('modificadores', 'select=*&order=orden.asc,id.asc'),
+    getTabla('insumos', 'select=*&order=id.asc'),
+    getTabla('almacen', 'select=*&order=id.asc'),
+    getTabla('envios', 'select=*&order=id.asc'),
+    getTabla('ordenes_cocina', 'select=*&order=id.asc'),
+    getTabla('usuarios_pos', 'select=*&order=id.asc'),
+    getTabla('ventas_pos', 'select=*&order=id.desc&limit=500'),
+    getTabla('cierres_caja', 'select=*&order=id.asc'),
+    getTabla('movimientos_inventario', 'select=*&order=id.desc&limit=300')
+  ]);
+
+  const nuevo = crearDBVacia();
+  nuevo.supabase = { ...DB.supabase };
+
+  if (cfgRows?.[0]) {
+    const c = cfgRows[0];
+    nuevo.config.nombreLocal = c.nombre_local || nuevo.config.nombreLocal;
+    nuevo.config.lemaLocal = c.lema_local || nuevo.config.lemaLocal;
+    nuevo.config.ruc = c.ruc || '';
+    nuevo.config.logoPrincipal = c.logo_principal || 'logo.png';
+    nuevo.config.favicon = c.favicon || 'favicon.png';
+    nuevo.tema = c.tema === 'light' ? 'light' : 'dark';
+    if (c.paleta_id) nuevo.paleta = c.paleta_id;
+    nuevo.impresion.usarTicketCliente = !!c.imprimir_cliente;
+    nuevo.impresion.autoCocina = !!c.auto_cocina;
+    nuevo.impresion.autoCobro = c.auto_cobro !== false;
+    nuevo.impresion.autoPrecuenta = c.auto_precuenta !== false;
+    if (c.carpeta_descarga) nuevo.config.carpetaDescarga = c.carpeta_descarga;
+    if (c.plantilla_interno && Object.keys(c.plantilla_interno).length) {
+      nuevo.impresion.plantillaInterno = { ...nuevo.impresion.plantillaInterno, ...c.plantilla_interno };
+    }
+    if (c.plantilla_cliente && Object.keys(c.plantilla_cliente).length) {
+      nuevo.impresion.plantillaCliente = { ...nuevo.impresion.plantillaCliente, ...c.plantilla_cliente };
+    }
+    if (c.plantilla_a4 && Object.keys(c.plantilla_a4).length) {
+      nuevo.impresion.plantillaA4 = { ...nuevo.impresion.plantillaA4, ...c.plantilla_a4 };
+    }
+    if (c.licencia && Object.keys(c.licencia).length) {
+      nuevo.licencia = { ...nuevo.licencia, ...c.licencia };
+    }
+  }
+
+  if (ambRows?.length) {
+    nuevo.ambientes = ambRows.map(a => ({ id: Number(a.id), nombre: a.nombre, orden: a.orden || 1 }));
+    nuevo.secuencias.ambiente = Math.max(1, ...nuevo.ambientes.map(a => a.id));
+  }
+  if (mesaRows) {
+    nuevo.mesas = mesaRows.map(m => ({
+      id: Number(m.id),
+      ambienteId: Number(m.ambiente_id) || 1,
+      numero: m.numero || String(m.id),
+      nombre: m.nombre,
+      capacidad: Number(m.capacidad) || 4,
+      x: Number(m.x) || 0,
+      y: Number(m.y) || 0,
+      estado: m.estado || 'libre',
+      notaReserva: m.nota_reserva || '',
+      desde: m.desde || null,
+      items: Array.isArray(m.items) ? m.items : (Array.isArray(m.cuenta?.items) ? m.cuenta.items : []),
+      pagado: Number(m.pagado ?? m.cuenta?.pagado) || 0,
+      desc: Number(m.descuento ?? m.cuenta?.desc) || 0,
+      cocinaEntregado: !!m.cocina_entregado,
+      pagadaOcupada: !!m.pagada_ocupada
+    }));
+    nuevo.secuencias.mesa = nuevo.mesas.reduce((mx, m) => Math.max(mx, m.id), 0);
+  }
+  if (catRows) nuevo.categorias = catRows.filter(c => c.activo !== false).map(c => c.nombre);
+  if (modRows) nuevo.modificadores = modRows.filter(m => m.activo !== false).map(m => m.nombre);
+  if (insRows) {
+    insRows.forEach(i => {
+      nuevo.insumos[i.nombre] = {
+        stock: Number(i.stock) || 0,
+        min: Number(i.min) || 0,
+        unidad: i.unidad || 'kg',
+        pCompra: Number(i.p_compra) || 0,
+        img: i.img || ''
+      };
+    });
+    nuevo.secuencias.insumo = insRows.length;
+  }
+  if (almRows) {
+    nuevo.productos = almRows.map(p => ({
+      id: Number(p.id),
+      codigo: p.codigo || `PROD-${p.id}`,
+      nombre: p.nombre || p.descripcion,
+      precio: Number(p.p_venta) || 0,
+      cat: p.categoria || 'General',
+      desc: p.detalles || '',
+      img: p.imagen_url || ''
+    }));
+    almRows.forEach(p => {
+      if (p.receta && typeof p.receta === 'object' && Object.keys(p.receta).length) {
+        nuevo.recetas[Number(p.id)] = p.receta;
+      }
+    });
+    nuevo.secuencias.producto = nuevo.productos.reduce((mx, p) => Math.max(mx, p.id), 0);
+  }
+  if (envRows) {
+    nuevo.envios = envRows.map(ev => ({
+      id: Number(ev.id),
+      nombre: ev.nombre || `Envío #${ev.id}`,
+      cliente: ev.cliente || 'Cliente',
+      telefono: ev.telefono || '',
+      direccion: ev.direccion || '',
+      estadoPago: ev.estado_pago || 'contraentrega_efectivo',
+      referenciaYape: ev.referencia_yape || '',
+      notas: ev.notas || '',
+      items: Array.isArray(ev.items) ? ev.items : [],
+      pagado: Number(ev.pagado) || 0,
+      desc: Number(ev.descuento) || 0,
+      cocinaEntregado: !!ev.cocina_entregado,
+      pagadoFinalizado: !!ev.pagado_finalizado,
+      creadoEn: ev.created_at || new Date().toISOString()
+    }));
+    nuevo.secuencias.envio = nuevo.envios.reduce((mx, e) => Math.max(mx, e.id), 0);
+  }
+  if (cocRows) {
+    nuevo.ordenesCocina = cocRows.map(o => ({
+      id: Number(o.id),
+      key: o.key,
+      tipo: o.tipo || 'mesa',
+      cuentaId: Number(o.cuenta_id) || 0,
+      titulo: o.titulo,
+      subtitulo: o.subtitulo || '',
+      items: Array.isArray(o.items) ? o.items : [],
+      pagado: !!o.pagado,
+      entregado: !!o.entregado,
+      archivado: !!o.archivado,
+      creadoEn: o.created_at || new Date().toISOString()
+    }));
+    nuevo.secuencias.ordenCocina = nuevo.ordenesCocina.reduce((mx, o) => Math.max(mx, o.id), 0);
+  }
+  if (usrRows?.length) {
+    const mapaLocal = new Map((DB.usuarios || []).map(u => [u.nombre.toUpperCase(), u]));
+    nuevo.usuarios = usrRows.map(u => {
+      const prev = mapaLocal.get(String(u.username || '').toUpperCase());
+      const esMaestro = u.username === 'WILLOSIRIS' || !!u.es_maestro;
+      return {
+        id: Number(u.id),
+        nombre: u.username,
+        rol: esMaestro ? 'admin' : (u.rol || 'caja'),
+        pinHash: u.pin_hash || prev?.pinHash || '',
+        pinPlain: esMaestro ? PIN_ADMIN_MAESTRO : (prev?.pinPlain || undefined),
+        pinLen: Number(u.pin_len) || prev?.pinLen || 6,
+        claveSecretaHash: u.clave_secreta_hash || prev?.claveSecretaHash || '',
+        claveSecreta: esMaestro ? PIN_ADMIN_MAESTRO : (prev?.claveSecreta || undefined),
+        foto: u.foto_url || '',
+        permisos: Array.isArray(u.permisos) ? u.permisos : [],
+        activo: u.activo !== false,
+        esMaestro,
+        creadoEn: u.created_at || new Date().toISOString(),
+        ultimoAcceso: u.ultimo_acceso || prev?.ultimoAcceso || null
+      };
+    });
+    nuevo.secuencias.usuario = nuevo.usuarios.reduce((mx, u) => Math.max(mx, u.id), 1);
+  }
+  if (venRows) {
+    nuevo.ventas = venRows.map(v => ({
+      id: Number(v.id),
+      turnoId: v.turno_id || 1,
+      fecha: v.fecha || v.created_at || new Date().toISOString(),
+      origenTipo: v.origen || 'Salón',
+      mesa: v.etiqueta || v.origen || 'Salón',
+      comprobante: v.comprobante || 'Ticket Interno',
+      docTipo: v.doc_tipo || 'DNI',
+      docNum: v.doc_num || '',
+      cliente: v.cliente || 'Público general',
+      metodo: v.metodo_pago || 'Efectivo',
+      referencia: v.referencia || '',
+      subtotal: Number(v.subtotal) || 0,
+      igv: Number(v.igv) || 0,
+      total: Number(v.total) || 0,
+      recibido: Number(v.recibido) || Number(v.total) || 0,
+      vuelto: Number(v.vuelto) || 0,
+      etiqueta: v.etiqueta || '',
+      usuario: v.usuario || 'WILLOSIRIS',
+      items: Array.isArray(v.detalle) ? v.detalle : []
+    }));
+    nuevo.secuencias.venta = nuevo.ventas.reduce((mx, v) => Math.max(mx, v.id), 0);
+  }
+  if (cieRows) {
+    nuevo.cierres = cieRows.map(c => c.detalle || { id: Number(c.id), nombre: c.nombre });
+    nuevo.secuencias.cierre = nuevo.cierres.reduce((mx, c) => Math.max(mx, c.id || 0), 0);
+  }
+  if (movRows) {
+    nuevo.movimientos = movRows.map(m => ({
+      id: Number(m.id),
+      fecha: m.fecha || new Date().toISOString(),
+      insumo: m.insumo,
+      tipo: m.tipo || 'consumo',
+      cantidad: Number(m.cantidad) || 0,
+      motivo: m.motivo || '',
+      usuario: m.usuario || 'WILLOSIRIS'
+    }));
+    nuevo.secuencias.mov = nuevo.movimientos.reduce((mx, m) => Math.max(mx, m.id), 0);
+  }
+
+  return nuevo;
+}
+
+async function subirDatosSupabase(silencioso = false) {
   const restBase = obtenerRestBaseSupabase(DB.supabase.url);
   const key = DB.supabase.anonKey;
   if (!restBase || !key) {
-    toast('No hay credenciales de Supabase configuradas', 'error');
-    return;
+    if (!silencioso) toast('No hay credenciales de Supabase configuradas', 'error');
+    return false;
   }
-  const payloadSeguro = {
-    ...DB,
-    supabase: { ...DB.supabase, secretKey: '' }
-  };
   try {
-    // Upsert a id=1 para mantener una única instantánea maestra limpia
-    const res = await fetch(`${restBase}/respaldos_json?on_conflict=id`, {
-      method: 'POST',
-      headers: headersSupabase(key, {
-        'Content-Type': 'application/json',
-        Prefer: 'resolution=merge-duplicates,return=minimal'
-      }),
-      body: JSON.stringify({
-        id: 1,
-        nombre_local: DB.config.nombreLocal || "Juancho's",
-        payload: payloadSeguro,
-        updated_at: new Date().toISOString()
-      })
-    });
-    if (!res.ok) {
-      let msg = `Error HTTP ${res.status}`;
-      try {
-        const errJson = await res.json();
-        if (errJson?.code === '42501') {
-          msg = 'Política RLS bloqueando escritura: copia y ejecuta el Script SQL completo en Supabase SQL Editor';
-        } else if (errJson?.message) {
-          msg = errJson.message;
-        }
-      } catch (_) {}
-      DB.supabase.conectado = false;
-      guardarDB({ sinSync: true });
-      renderSupabaseAjustes();
-      if ($('#supaMensajeEstado')) $('#supaMensajeEstado').textContent = msg;
-      toast(msg, 'error');
-      return;
+    await sincronizarConSupabaseEnTiempoReal();
+    if (!DB.supabase.conectado) {
+      if (!silencioso) toast('No se pudo subir el estado a Supabase. Revisa el Script SQL.', 'error');
+      return false;
     }
-    DB.supabase.conectado = true;
-    DB.supabase.ultimoRespaldoAuto = Date.now();
-    DB.supabase.ultimaSync = new Date().toISOString();
-    guardarDB({ sinSync: true });
     await probarConexionSupabase(true);
     renderSupabaseAjustes();
-    toast('Respaldo maestro actualizado en Supabase (id: 1)');
+    if (!silencioso) toast('Todas las tablas y el estado maestro sincronizados en Supabase');
+    return true;
   } catch (err) {
-    toast(`Error de red al subir a Supabase: ${err?.message || 'sin conexión'}`, 'error');
+    if (!silencioso) toast(`Error de red al subir a Supabase: ${err?.message || 'sin conexión'}`, 'error');
+    return false;
   }
 }
 
@@ -5371,7 +5891,7 @@ async function descargarDatosSupabase() {
     return;
   }
   try {
-    const r = await fetch(`${restBase}/respaldos_json?select=payload&order=updated_at.desc&limit=1`, {
+    const r = await fetch(`${restBase}/respaldos_json?id=eq.1&select=payload,updated_at`, {
       headers: headersSupabase(key)
     });
     if (!r.ok) {
@@ -5385,31 +5905,62 @@ async function descargarDatosSupabase() {
     }
     const arr = await r.json();
     if (Array.isArray(arr) && arr[0]?.payload) {
-      const secretLocal = DB.supabase.secretKey;
-      const autoSyncLocal = DB.supabase.autoSync;
-      const freqLocal = DB.supabase.backupInterval;
-      DB = normalizarDB(arr[0].payload);
-      if (!DB.supabase.secretKey && secretLocal) DB.supabase.secretKey = secretLocal;
-      DB.supabase.autoSync = autoSyncLocal !== false;
-      DB.supabase.backupInterval = freqLocal || '1h';
-      DB.supabase.ultimaSync = new Date().toISOString();
-      DB.supabase.conectado = true;
-      guardarDB({ sinSync: true });
-      pintarMarcaLocal();
-      renderListaUsuariosAcceso();
-      renderTodo();
+      aplicarSnapshotNubeLocalmente(arr[0].payload, arr[0].updated_at);
       await probarConexionSupabase(true);
-      toast('Datos restaurados desde Supabase Cloud');
+      toast('Datos sincronizados desde Supabase Cloud');
       return;
     }
-    DB.supabase.conectado = true;
-    DB.supabase.ultimaSync = new Date().toISOString();
-    guardarDB({ sinSync: true });
-    renderSupabaseAjustes();
-    toast('Conexión OK · Aún no hay respaldos guardados en la nube', 'alerta');
+
+    // Si aún no existe snapshot maestro, hidratar directamente leyendo las tablas relacionales
+    const rel = await hidratarDesdeTablasRelacionalesSupabase(restBase, key);
+    aplicarSnapshotNubeLocalmente(rel, new Date().toISOString());
+    await probarConexionSupabase(true);
+    toast('Tablas leídas directamente desde Supabase Cloud');
   } catch (err) {
     toast(`Error de red al consultar Supabase: ${err?.message || 'sin conexión'}`, 'error');
   }
+}
+
+async function verificarCambiosNubeEnVivo() {
+  if (document.visibilityState !== 'visible') return;
+  if (supaSyncEnCurso || supaSyncTimer) return;
+  if (Date.now() - supaUltimaModLocalMs < 2500) return;
+  if (document.querySelector('dialog[open]')) return; // No interrumpir mientras se edita un modal
+  if (DB.supabase?.autoSync === false || !DB.supabase?.url || !DB.supabase?.anonKey) return;
+
+  const restBase = obtenerRestBaseSupabase(DB.supabase.url);
+  const key = DB.supabase.anonKey;
+  if (!restBase || !key || key.startsWith('sb_secret_')) return;
+
+  try {
+    const resMeta = await fetch(`${restBase}/respaldos_json?id=eq.1&select=updated_at`, {
+      headers: headersSupabase(key)
+    });
+    if (!resMeta.ok) return;
+    const metaArr = await resMeta.json();
+    if (!Array.isArray(metaArr) || !metaArr[0]?.updated_at) return;
+
+    const cloudUpdated = metaArr[0].updated_at;
+    const localUpdated = DB.supabase.ultimaSync;
+    const cloudTs = new Date(cloudUpdated).getTime();
+    const localTs = localUpdated ? new Date(localUpdated).getTime() : 0;
+
+    if (!isNaN(cloudTs) && cloudTs > localTs + 400) {
+      const resFull = await fetch(`${restBase}/respaldos_json?id=eq.1&select=payload,updated_at`, {
+        headers: headersSupabase(key)
+      });
+      if (!resFull.ok) return;
+      const fullArr = await resFull.json();
+      if (Array.isArray(fullArr) && fullArr[0]?.payload) {
+        aplicarSnapshotNubeLocalmente(fullArr[0].payload, fullArr[0].updated_at);
+      }
+    }
+  } catch (_) {}
+}
+
+function iniciarPollingSupabaseEnVivo() {
+  if (supaPollTimer) clearInterval(supaPollTimer);
+  supaPollTimer = setInterval(verificarCambiosNubeEnVivo, 4500);
 }
 
 async function cargarDatosInicialesSupabase() {
@@ -5422,63 +5973,34 @@ async function cargarDatosInicialesSupabase() {
     if (DB.supabase.conectado) {
       const restBase = obtenerRestBaseSupabase(DB.supabase.url);
       const key = DB.supabase.anonKey;
-      
-      // 1. Consultar la última instantánea maestra en respaldos_json
-      const r = await fetch(`${restBase}/respaldos_json?select=payload,updated_at&order=updated_at.desc&limit=1`, {
+
+      const r = await fetch(`${restBase}/respaldos_json?id=eq.1&select=payload,updated_at`, {
         headers: headersSupabase(key)
       });
       if (r.ok) {
         const arr = await r.json();
         if (Array.isArray(arr) && arr[0]?.payload) {
-          const secretLocal = DB.supabase.secretKey;
-          const autoSyncLocal = DB.supabase.autoSync;
-          const freqLocal = DB.supabase.backupInterval;
           const cloudUpdated = arr[0].updated_at;
           const localSync = DB.supabase.ultimaSync;
-          
-          // Si el dispositivo es nuevo (sin localStorage), si la nube tiene datos más recientes o más productos
-          const esNuevoDispositivo = !localStorage.getItem(STORAGE_KEY);
-          const nubeMasReciente = cloudUpdated && (!localSync || new Date(cloudUpdated) > new Date(localSync));
-          const tieneMasProductosNube = Array.isArray(arr[0].payload?.productos) && arr[0].payload.productos.length > DB.productos.length;
-          
-          if (esNuevoDispositivo || nubeMasReciente || !DB.productos.length || tieneMasProductosNube) {
-            DB = normalizarDB(arr[0].payload);
-            if (secretLocal) DB.supabase.secretKey = secretLocal;
-            DB.supabase.autoSync = autoSyncLocal !== false;
-            DB.supabase.backupInterval = freqLocal || '1h';
-            DB.supabase.ultimaSync = cloudUpdated || new Date().toISOString();
-            DB.supabase.conectado = true;
-            guardarDB({ sinSync: true });
-            pintarMarcaLocal();
-            renderListaUsuariosAcceso();
-            renderTodo();
-          }
-        }
-      }
+          const esNuevoDispositivo = !localStorage.getItem(STORAGE_KEY) || !localSync;
+          const cloudTs = cloudUpdated ? new Date(cloudUpdated).getTime() : 0;
+          const localTs = localSync ? new Date(localSync).getTime() : 0;
+          const nubeMasReciente = cloudTs > (localTs + 400);
 
-      // 2. Si aún no hay platos en DB local, intentar importar desde la tabla relacional almacen
-      if (!DB.productos.length) {
-        try {
-          const resAlmacen = await fetch(`${restBase}/almacen?select=*&limit=100`, {
-            headers: headersSupabase(key)
-          });
-          if (resAlmacen.ok) {
-            const filas = await resAlmacen.json();
-            if (Array.isArray(filas) && filas.length) {
-              DB.productos = filas.map(f => ({
-                id: f.id,
-                codigo: f.codigo || `PROD-${f.id}`,
-                nombre: f.nombre || f.descripcion,
-                precio: Number(f.p_venta) || 0,
-                cat: f.categoria || 'General',
-                desc: f.detalles || '',
-                img: f.imagen_url || ''
-              }));
-              guardarDB({ sinSync: true });
-              renderTodo();
+          if (esNuevoDispositivo || nubeMasReciente) {
+            aplicarSnapshotNubeLocalmente(arr[0].payload, cloudUpdated);
+          }
+        } else {
+          // Base nueva sin respaldos_json todavía: leer tablas relacionales por si ya existen registros en Supabase
+          const tieneDatosLocales = DB.productos.length || DB.mesas.length || DB.ventas.length || Object.keys(DB.insumos).length;
+          if (!tieneDatosLocales) {
+            const rel = await hidratarDesdeTablasRelacionalesSupabase(restBase, key);
+            const hayNube = rel.productos.length || rel.mesas.length || rel.ventas.length || Object.keys(rel.insumos).length || rel.categorias.length || rel.usuarios.length > 1;
+            if (hayNube) {
+              aplicarSnapshotNubeLocalmente(rel, new Date().toISOString());
             }
           }
-        } catch (_) {}
+        }
       }
     }
   } catch (err) {
@@ -5486,6 +6008,7 @@ async function cargarDatosInicialesSupabase() {
   } finally {
     supaBootListo = true;
     actualizarRelojYConexion();
+    iniciarPollingSupabaseEnVivo();
   }
 }
 
@@ -5629,7 +6152,24 @@ function guardarLicenciaYMarca(e) {
 }
 
 /* --- Respaldos JSON, SQL y Reinicio --- */
-function descargarArchivo(nombre, contenido, mime = 'text/plain;charset=utf-8') {
+async function descargarArchivo(nombre, contenido, mime = 'text/plain;charset=utf-8') {
+  try {
+    const handle = await recuperarDirHandleIDB();
+    if (handle) {
+      let perm = await handle.queryPermission?.({ mode: 'readwrite' });
+      if (perm !== 'granted' && handle.requestPermission) {
+        perm = await handle.requestPermission({ mode: 'readwrite' });
+      }
+      if (perm === 'granted') {
+        const fileHandle = await handle.getFileHandle(nombre, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(new Blob([contenido], { type: mime }));
+        await writable.close();
+        return 'carpeta';
+      }
+    }
+  } catch (_) {}
+
   const blob = new Blob([contenido], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -5639,13 +6179,17 @@ function descargarArchivo(nombre, contenido, mime = 'text/plain;charset=utf-8') 
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return 'navegador';
 }
 
-function exportarRespaldoJson() {
-  if (!exigirAdmin()) return;
+async function exportarRespaldoJson(nombrePersonalizado = '') {
+  if (!exigirAdmin()) return false;
   const f = new Date().toISOString().slice(0, 10);
-  descargarArchivo(`juanchos_respaldo_${f}.json`, JSON.stringify(DB, null, 2), 'application/json;charset=utf-8');
-  toast(`Respaldo JSON descargado (${DB.config.carpetaDescarga})`);
+  const nombreArchivo = nombrePersonalizado || `juanchos_respaldo_${f}.json`;
+  const destino = await descargarArchivo(nombreArchivo, JSON.stringify(DB, null, 2), 'application/json;charset=utf-8');
+  const lugar = destino === 'carpeta' ? DB.config.carpetaDescarga : 'carpeta de descargas';
+  toast(`Respaldo JSON guardado en ${lugar}: ${nombreArchivo}`);
+  return true;
 }
 
 function importarRespaldoJson(file) {
@@ -5684,22 +6228,126 @@ function exportarSql() {
   toast('Archivo SQL descargado');
 }
 
+function preguntarBackupAntesDeReinicio() {
+  return new Promise(resolve => {
+    const dlg = document.createElement('dialog');
+    dlg.innerHTML = `
+      <div class="dlg" style="width:min(500px,94vw);">
+        <div class="dlg-mac-bar">
+          <button type="button" class="dlg-mac-close" data-accion="cancelar" aria-label="Cerrar ventana" title="Cancelar"><svg class="ico"><use href="#i-x"/></svg></button>
+          <h2>¿Descargar backup antes de restablecer?</h2>
+        </div>
+        <p class="sub">Puedes guardar una copia completa en tu carpeta por defecto (<b>${esc(DB.config?.carpetaDescarga || 'Descargas')}</b>) antes de dejar el sistema y Supabase en blanco, o restablecer directamente.</p>
+        <div class="dlg-acciones" style="flex-wrap:wrap;">
+          <button type="button" data-accion="cancelar">Cancelar</button>
+          <button type="button" class="btn-no" data-accion="sin_backup">No, restablecer sin backup</button>
+          <button type="button" class="btn-prim" data-accion="backup"><svg class="ico"><use href="#i-bajar"/></svg>Descargar backup y restablecer</button>
+        </div>
+      </div>`;
+    document.body.appendChild(dlg);
+    const cerrar = val => {
+      if (dlg.open) dlg.close();
+      dlg.remove();
+      resolve(val);
+    };
+    dlg.addEventListener('click', e => {
+      if (e.target === dlg) { cerrar('cancelar'); return; }
+      const btn = e.target.closest('[data-accion]');
+      if (btn) cerrar(btn.dataset.accion);
+    });
+    dlg.addEventListener('cancel', e => {
+      e.preventDefault();
+      cerrar('cancelar');
+    });
+    dlg.showModal();
+  });
+}
+
+async function limpiarDatosNubePorReinicio() {
+  const restBase = obtenerRestBaseSupabase(DB.supabase?.url);
+  const key = DB.supabase?.anonKey;
+  if (!restBase || !key || key.startsWith('sb_secret_')) return;
+  const eliminaciones = [
+    'ventas_pos?id=gt.0',
+    'movimientos_inventario?id=gt.0',
+    'cierres_caja?id=gt.0',
+    'ordenes_cocina?id=gt.0',
+    'envios?id=gt.0',
+    'mesas?id=gt.0',
+    'almacen?id=gt.0',
+    'insumos?id=gt.0',
+    'categorias?id=gt.0',
+    'modificadores?id=gt.0',
+    'clientes?id=gt.0',
+    'ambientes?id=neq.1',
+    'usuarios_pos?username=neq.WILLOSIRIS'
+  ];
+  await Promise.all(
+    eliminaciones.map(q =>
+      fetch(`${restBase}/${q}`, {
+        method: 'DELETE',
+        headers: headersSupabase(key, { Prefer: 'return=minimal' })
+      }).catch(() => {})
+    )
+  );
+  await sincronizarConSupabaseEnTiempoReal();
+  await probarConexionSupabase(true);
+}
+
 async function reiniciarSistema() {
   if (!exigirAdmin()) return;
   const ok = await confirmar({
-    titulo: '¿Reiniciar todo el sistema en blanco?',
-    texto: 'Se borrarán ventas, platos, insumos y mesas. Se conservará el usuario maestro WILLOSIRIS y el Salón Principal en blanco.',
-    textoOk: 'Sí, reiniciar sistema',
+    titulo: '¿Restablecer todo el sistema en blanco?',
+    texto: 'Se eliminarán todas las ventas, platos, categorías, insumos, envíos, órdenes de cocina, usuarios adicionales y mesas (tanto local como en Supabase). Se conservará WILLOSIRIS y el Salón Principal en blanco.',
+    textoOk: 'Continuar con restablecimiento',
     requierePin: true,
     segundos: 5
   });
   if (!ok) return;
+
+  const eleccion = await preguntarBackupAntesDeReinicio();
+  if (eleccion === 'cancelar') return;
+
+  if (eleccion === 'backup') {
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+    await exportarRespaldoJson(`juanchos_backup_antes_reinicio_${stamp}.json`);
+  }
+
+  const supaKeep = {
+    url: DB.supabase?.url || SUPABASE_DEFAULT_URL,
+    anonKey: DB.supabase?.anonKey || SUPABASE_DEFAULT_PUB_KEY,
+    secretKey: DB.supabase?.secretKey || SUPABASE_DEFAULT_SECRET_KEY,
+    conectado: !!DB.supabase?.conectado,
+    autoSync: DB.supabase?.autoSync !== false,
+    backupInterval: DB.supabase?.backupInterval || '1h',
+    ultimoRespaldoAuto: null,
+    ultimaSync: null,
+    pendientesBorrar: {}
+  };
+  const carpetaKeep = DB.config?.carpetaDescarga || 'Descargas/Juanchos_POS';
+
+  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
   DB = crearDBVacia();
-  guardarDB();
+  DB.supabase = supaKeep;
+  DB.config.carpetaDescarga = carpetaKeep;
   cuentaActiva = { tipo: null, id: null };
-  ambienteActualId = DB.ambientes[0].id;
+  ambienteActualId = DB.ambientes[0]?.id || 1;
+  editandoMesas = false;
+  catActual = 'Todas';
+  busquedaPlato = '';
+  if ($('#buscarPlato')) $('#buscarPlato').value = '';
+
+  guardarDB({ sinSync: true });
+  aplicarTema(DB.tema, true);
+  pintarMarcaLocal();
+  renderListaUsuariosAcceso();
   renderTodo();
-  toast('Sistema reiniciado en blanco');
+
+  if (supaKeep.url && supaKeep.anonKey) {
+    toast('Limpiando tablas y restableciendo Supabase en blanco...');
+    await limpiarDatosNubePorReinicio();
+  }
+  toast('Sistema y base de datos restablecidos completamente en blanco');
 }
 
 /* ================= 9. Inicialización y Eventos ================= */
@@ -5765,11 +6413,11 @@ function init() {
 
   // Sincronización multi-dispositivo en tiempo real al volver a la pestaña o ventana activa
   window.addEventListener('focus', () => {
-    if (DB.supabase?.conectado) cargarDatosInicialesSupabase();
+    if (DB.supabase?.url && DB.supabase?.anonKey) verificarCambiosNubeEnVivo();
   });
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && DB.supabase?.conectado) {
-      cargarDatosInicialesSupabase();
+    if (document.visibilityState === 'visible' && DB.supabase?.url && DB.supabase?.anonKey) {
+      verificarCambiosNubeEnVivo();
     }
   });
 
@@ -5798,8 +6446,7 @@ function init() {
       }
     } catch (_) {}
     if ($('#inicio')?.classList.contains('active')) renderInicioCocina();
-    if ($('#salon')?.classList.contains('active')) renderSalon();
-    if (cuentaActiva.id) renderTicket();
+    else if ($('#salon')?.classList.contains('active')) renderSalon();
   }, 30000);
 
   // Login de usuarios guardados
@@ -5930,10 +6577,15 @@ function init() {
     if (del) cancelarEnvioActivo(Number(del.dataset.borrarEnvio));
   });
 
-  // Comandera
+  // Comandera (con debounce ligero para búsqueda fluida sin tirones)
+  let buscarPlatoTimer = null;
   $('#buscarPlato').addEventListener('input', e => {
     busquedaPlato = e.target.value;
-    renderComandera();
+    if (buscarPlatoTimer) clearTimeout(buscarPlatoTimer);
+    buscarPlatoTimer = setTimeout(() => {
+      buscarPlatoTimer = null;
+      renderComandera();
+    }, 110);
   });
   $('#categorias').addEventListener('click', e => {
     const b = e.target.closest('[data-cat]');
@@ -6027,7 +6679,7 @@ function init() {
   });
   $('#btnAbrirModalMerma')?.addEventListener('click', () => {
     if (!exigirAdmin()) return;
-    if (!DB.insumos.length) {
+    if (!Object.keys(DB.insumos || {}).length) {
       toast('Registra primero al menos un insumo en almacén', 'alerta');
       return;
     }
