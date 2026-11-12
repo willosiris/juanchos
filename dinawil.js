@@ -40,88 +40,9 @@ const PERMISOS_POR_ROL = {
   cocina: ['pedidos.inicio']
 };
 
-const TEMAS_PREDEFINIDOS = [
-  {
-    id: 'brasa_nocturna',
-    nombre: 'Brasa Nocturna',
-    desc: 'Carbón cálido de salchipapería con acentos azafrán y crema.',
-    modo: 'dark',
-    colores: {
-      '--bg': '#12100e',
-      '--panel': '#1a1714',
-      '--azafran': '#e07a1f',
-      '--crema': '#f5efe6',
-      '--libre': '#2e9e68',
-      '--ocup': '#d65a31',
-      '--yape': '#742384',
-      '--txt': '#f3eee8'
-    }
-  },
-  {
-    id: 'marfil_editorial',
-    nombre: 'Marfil Editorial',
-    desc: 'Superficie clara de papel cálido de alto contraste para ambientes iluminados.',
-    modo: 'light',
-    colores: {
-      '--bg': '#f6f2ec',
-      '--panel': '#ffffff',
-      '--azafran': '#c6620c',
-      '--crema': '#1f1a15',
-      '--libre': '#1f8252',
-      '--ocup': '#c2461f',
-      '--yape': '#6b1d7a',
-      '--txt': '#1f1b17'
-    }
-  },
-  {
-    id: 'cupertino_midnight',
-    nombre: 'Cupertino Midnight',
-    desc: 'Pizarra nocturna profunda con acentos ámbar dorado y verde esmeralda.',
-    modo: 'dark',
-    colores: {
-      '--bg': '#0e1116',
-      '--panel': '#161b22',
-      '--azafran': '#f0883e',
-      '--crema': '#f0f6fc',
-      '--libre': '#2ea043',
-      '--ocup': '#da552f',
-      '--yape': '#8957e5',
-      '--txt': '#e6edf3'
-    }
-  },
-  {
-    id: 'selva_esmeralda',
-    nombre: 'Selva Esmeralda',
-    desc: 'Verde bosque profundo con acentos cobre tostado y marfil.',
-    modo: 'dark',
-    colores: {
-      '--bg': '#0d1512',
-      '--panel': '#14201b',
-      '--azafran': '#d97724',
-      '--crema': '#ecfdf5',
-      '--libre': '#10b981',
-      '--ocup': '#e05638',
-      '--yape': '#7c3aed',
-      '--txt': '#e6f4ee'
-    }
-  },
-  {
-    id: 'terracota_andina',
-    nombre: 'Terracota Andina',
-    desc: 'Tierra tostada artesanal con terracota intensa y piedra cálida.',
-    modo: 'dark',
-    colores: {
-      '--bg': '#171110',
-      '--panel': '#221917',
-      '--azafran': '#ea580c',
-      '--crema': '#fff7ed',
-      '--libre': '#22c55e',
-      '--ocup': '#dc4a2d',
-      '--yape': '#8b2fc9',
-      '--txt': '#f8ebe6'
-    }
-  }
-];
+const SUPABASE_DEFAULT_URL = 'https://lbjxpbroaprflqbwjbkz.supabase.co/rest/v1/';
+const SUPABASE_DEFAULT_PUB_KEY = 'sb_publishable_1X3z3mGMFy64hqCS1bwZVw_ZvcWFmzX';
+const SUPABASE_DEFAULT_SECRET_KEY = 'sb_secret_aEG0A7mbdiv6ixpMKz52nA_49xCL6Vd';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -164,6 +85,38 @@ function hashPinSync(pin, sal = 'juanchos_v3') {
 
 /* ================= Estado inicial con WILLOSIRIS (PIN 749696) ================= */
 function crearPlantillaTicketBase(tipo = 'interno') {
+  if (tipo === 'a4') {
+    return {
+      tituloMarca: "Juancho's",
+      subtituloMarca: 'Salchipapería & Punto de venta',
+      lineaRuc: '',
+      direccion: 'Av. Principal 123',
+      ciudad: 'Lima, Perú',
+      telefono: '(01) 555-1234',
+      tituloDoc: 'REPORTE GENERAL DE VENTAS',
+      lblCheck: 'Check:',
+      lblCajero: 'Cajero:',
+      lblOrden: 'Orden #:',
+      lblCliente: 'Cliente:',
+      lblFecha: 'FECHA:',
+      lblHora: 'HORA:',
+      lblSubtotal: 'SUBTOTAL',
+      lblIgv: 'IGV (18%)',
+      lblTotal: 'TOTAL',
+      lblMetodo: 'MÉTODO PAGO',
+      lblRecibido: 'RECIBIDO',
+      lblVuelto: 'VUELTO',
+      piePagina: 'Documento administrativo de ventas y arqueo generado por el sistema POS.',
+      promoTexto: 'Control interno de administración',
+      lblCodigo: '',
+      margenMm: 10,
+      fontTituloPx: 18,
+      fontCuerpoPx: 11,
+      mostrarLogo: true,
+      mostrarImpuestos: true,
+      mostrarBarcode: false
+    };
+  }
   const esCliente = tipo === 'cliente';
   return {
     tituloMarca: "Juancho's",
@@ -205,8 +158,6 @@ function crearDBVacia() {
   return {
     version: 3,
     tema: 'dark',
-    temaPreset: 'brasa_nocturna',
-    coloresCustom: {},
     config: {
       igv: 0.18,
       nombreLocal: "Juancho's",
@@ -217,20 +168,19 @@ function crearDBVacia() {
       carpetaDescarga: 'Descargas/Juanchos_POS'
     },
     impresion: {
-      impCaja: 'Ticketera_Caja_80mm',
-      impCocina: 'Ticketera_Cocina_80mm',
-      impReportes: 'Impresora_Oficina_A4',
       usarTicketCliente: false, // false = Control Interno por defecto, true = Ticket para Cliente
       autoCocina: false,
       autoCobro: true,
       autoPrecuenta: true,
       modoColorA4: 'color',
       plantillaInterno: crearPlantillaTicketBase('interno'),
-      plantillaCliente: crearPlantillaTicketBase('cliente')
+      plantillaCliente: crearPlantillaTicketBase('cliente'),
+      plantillaA4: crearPlantillaTicketBase('a4')
     },
     supabase: {
-      url: 'https://qkhliyvtrawtveexuxls.supabase.co',
-      anonKey: 'sb_publishable_Ds4IYaHux6yT2koNicw4Ug_OoZYyCQ_',
+      url: SUPABASE_DEFAULT_URL,
+      anonKey: SUPABASE_DEFAULT_PUB_KEY,
+      secretKey: SUPABASE_DEFAULT_SECRET_KEY,
       conectado: true,
       ultimaSync: null
     },
@@ -287,7 +237,7 @@ let filtroMetodoRep = 'Todos';
 let filtroPeriodoRep = 'diario';
 let filtroCocinaEstado = 'pendientes';
 let formatoImpresionRep = 'a4';
-let plantillaEditando = 'interno'; // 'interno' | 'cliente'
+let plantillaEditando = 'interno'; // 'interno' | 'cliente' | 'a4'
 let cuentaActiva = { tipo: null, id: null }; // { tipo: 'mesa' | 'envio', id: Number }
 let editandoMesas = false;
 let platoEditandoId = null;
@@ -305,18 +255,29 @@ function normalizarDB(d) {
   const base = crearDBVacia();
   if (!d || typeof d !== 'object') return base;
   const impIn = d.impresion || {};
+  const supaIn = d.supabase || {};
+  const usaAntiguaSupa = typeof supaIn.url === 'string' && supaIn.url.includes('qkhliyvtrawtveexuxls');
+  const supaNorm = usaAntiguaSupa
+    ? { ...base.supabase }
+    : {
+        ...base.supabase,
+        ...supaIn,
+        url: supaIn.url || base.supabase.url,
+        anonKey: supaIn.anonKey || base.supabase.anonKey,
+        secretKey: supaIn.secretKey || base.supabase.secretKey
+      };
   const out = {
     ...base,
     ...d,
-    temaPreset: d.temaPreset || base.temaPreset,
     config: { ...base.config, ...(d.config || {}) },
     impresion: {
       ...base.impresion,
       ...impIn,
       plantillaInterno: { ...crearPlantillaTicketBase('interno'), ...(impIn.plantillaInterno || {}) },
-      plantillaCliente: { ...crearPlantillaTicketBase('cliente'), ...(impIn.plantillaCliente || {}) }
+      plantillaCliente: { ...crearPlantillaTicketBase('cliente'), ...(impIn.plantillaCliente || {}) },
+      plantillaA4: { ...crearPlantillaTicketBase('a4'), ...(impIn.plantillaA4 || {}) }
     },
-    supabase: { ...base.supabase, ...(d.supabase || {}) },
+    supabase: supaNorm,
     licencia: { ...base.licencia, ...(d.licencia || {}) },
     secuencias: { ...base.secuencias, ...(d.secuencias || {}) },
     ambientes: Array.isArray(d.ambientes) && d.ambientes.length ? d.ambientes : base.ambientes,
@@ -378,7 +339,7 @@ function registrarActividad(accion, detalle = '') {
   if (DB.actividad.length > 200) DB.actividad.length = 200;
 }
 
-/* ================= Tema Oscuro / Claro (Estilo iOS) y 5 Temas Predefinidos ================= */
+/* ================= Tema Oscuro / Claro (Estilo iOS) ================= */
 function aplicarTema(tema) {
   DB.tema = tema === 'light' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', DB.tema);
@@ -391,30 +352,11 @@ function aplicarTema(tema) {
   if (lbl) lbl.textContent = esClaro ? 'Claro' : 'Oscuro';
   const meta = $('#metaThemeColor');
   if (meta) meta.setAttribute('content', esClaro ? '#f6f2ec' : '#12100e');
-  aplicarColoresPersonalizados();
   guardarDB();
 }
 function alternarTema() {
   const nuevoModo = DB.tema === 'light' ? 'dark' : 'light';
-  if (nuevoModo === 'light') {
-    DB.temaPreset = 'marfil_editorial';
-    DB.coloresCustom = {};
-  } else if (DB.temaPreset === 'marfil_editorial') {
-    DB.temaPreset = 'brasa_nocturna';
-    DB.coloresCustom = {};
-  }
   aplicarTema(nuevoModo);
-  if ($('#aj-colores')?.classList.contains('active')) renderColoresAjustes();
-}
-function aplicarColoresPersonalizados() {
-  const root = document.documentElement;
-  const vars = ['--bg', '--panel', '--azafran', '--crema', '--libre', '--ocup', '--yape', '--txt'];
-  vars.forEach(v => root.style.removeProperty(v));
-  if (DB.coloresCustom && typeof DB.coloresCustom === 'object') {
-    Object.entries(DB.coloresCustom).forEach(([k, val]) => {
-      if (val) root.style.setProperty(k, val);
-    });
-  }
 }
 
 /* ================= Utilidades UI, Sonido/Efecto Yape y Animación Avión ================= */
@@ -2328,7 +2270,7 @@ function enviarACocina() {
   // Impresión condicional en cocina según el interruptor al costado del botón y privilegio del usuario
   if (DB.impresion.autoCocina && tienePermiso('impresion.permitir')) {
     imprimirTicket80mm({
-      subtitulo: `COMANDA DE COCINA · (${DB.impresion.impCocina || 'Cocina 80mm'})`,
+      subtitulo: 'COMANDA DE COCINA',
       checkLabel: objAct.tipo === 'envio' ? `DELIVERY (${cuenta.direccion})` : `${cuenta.nombre}`,
       ordenNum: numOrden,
       cajero: sesion?.nombre || 'Operador',
@@ -2904,8 +2846,100 @@ function obtenerPlantillaTicket(forzarTipo = null) {
   const imp = DB.impresion || {};
   const tipo = forzarTipo || (imp.usarTicketCliente ? 'cliente' : 'interno');
   const base = crearPlantillaTicketBase(tipo);
-  const guardada = tipo === 'cliente' ? imp.plantillaCliente : imp.plantillaInterno;
+  const guardada = tipo === 'a4'
+    ? imp.plantillaA4
+    : tipo === 'cliente'
+      ? imp.plantillaCliente
+      : imp.plantillaInterno;
   return { ...base, ...(guardada || {}) };
+}
+
+function aplicarFormatoPaginaImpresion(formato = '80mm', margenMm = 10) {
+  let st = $('#estiloPaginaImpresion');
+  if (!st) {
+    st = document.createElement('style');
+    st.id = 'estiloPaginaImpresion';
+    document.head.appendChild(st);
+  }
+  if (formato === 'a4') {
+    const m = Math.max(4, Math.min(25, Number(margenMm) || 10));
+    st.textContent = `@media print { @page { size: A4 portrait; margin: ${m}mm; } }`;
+  } else {
+    st.textContent = '@media print { @page { size: 80mm auto; margin: 0mm; } }';
+  }
+}
+
+function generarHTMLReporteA4(datos = {}) {
+  const cfg = DB.config;
+  const tpl = obtenerPlantillaTicket('a4');
+  const modoColor = datos.modoColor || DB.impresion.modoColorA4 || 'color';
+  const fechaEmision = datos.fechaEmision || fmtFechaHora(new Date().toISOString());
+  const usuarioStr = datos.usuario || sesion?.nombre || 'WILLOSIRIS';
+  const periodoTitulo = datos.periodoTitulo || tpl.tituloDoc || 'REPORTE GENERAL DE VENTAS';
+  const subInfo = [tpl.direccion, tpl.ciudad, tpl.telefono].filter(Boolean).join(' · ');
+  const filas = Array.isArray(datos.filas) ? datos.filas : [];
+  const filasHtml = filas.length
+    ? filas.map(v => `<tr>
+        <td>${fmtFechaHora(v.fecha)}</td>
+        <td>${esc(v.mesa)}</td>
+        <td>${esc(v.comprobante)} #${String(v.id).padStart(4, '0')}</td>
+        <td>${esc(v.cliente)}</td>
+        <td>${esc(v.metodo)}</td>
+        <td>${esc(v.referencia || '-')}</td>
+        <td>${esc(v.usuario)}</td>
+        <td style="text-align:right;font-weight:700">${soles(v.total)}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="8" style="text-align:center;padding:18px">Sin registros en este periodo.</td></tr>`;
+
+  const padPx = Math.max(6, Math.min(24, (Number(tpl.margenMm) ?? 10) * 1.4));
+  const titlePx = Number(tpl.fontTituloPx) || 18;
+  const bodyPx = Number(tpl.fontCuerpoPx) || 11;
+
+  return `<div class="a4-sheet-preview${modoColor === 'bn' ? ' bn' : ''}" style="--a4-pad:${padPx.toFixed(0)}px;--a4-title:${titlePx}px;--a4-font:${bodyPx}px">
+    <div class="a4-head">
+      <div class="a4-brand">
+        ${tpl.mostrarLogo !== false ? `<img src="${esc(cfg.logoPrincipal || 'logo.png')}" alt="Logo">` : ''}
+        <div>
+          <h1>${esc(tpl.tituloMarca || cfg.nombreLocal || "Juancho's")}</h1>
+          ${tpl.subtituloMarca ? `<p class="a4-subbrand">${esc(tpl.subtituloMarca)}</p>` : ''}
+          ${tpl.lineaRuc ? `<p style="margin:2px 0 0;font-size:10.5px;color:#334155">${esc(tpl.lineaRuc)}</p>` : ''}
+          ${subInfo ? `<p style="margin:2px 0 0;font-size:10.5px;color:#475569">${esc(subInfo)}</p>` : ''}
+        </div>
+      </div>
+      <div style="text-align:right;font-size:10.5px;line-height:1.45">
+        <strong>${esc(periodoTitulo)}</strong><br>
+        <span>Fecha de emisión: ${esc(fechaEmision)}</span><br>
+        <span>Generado por: ${esc(usuarioStr)}</span>
+      </div>
+    </div>
+
+    ${tpl.tituloDoc && datos.periodoTitulo && tpl.tituloDoc !== datos.periodoTitulo
+      ? `<div class="a4-doc-title">${esc(tpl.tituloDoc)}</div>`
+      : ''}
+
+    ${tpl.mostrarImpuestos !== false ? `
+      <div class="a4-kpis">
+        <div class="a4-kpi"><small>TOTAL VENDIDO</small><b>${soles(datos.total || 0)}</b></div>
+        <div class="a4-kpi"><small>EFECTIVO</small><b>${soles(datos.efectivo || 0)}</b></div>
+        <div class="a4-kpi"><small>YAPE (INFORMATIVO)</small><b>${soles(datos.yape || 0)}</b></div>
+        <div class="a4-kpi"><small>N.º DE COBROS</small><b>${filas.length}</b></div>
+      </div>
+    ` : ''}
+
+    <table class="a4-table">
+      <thead>
+        <tr><th>Fecha / Hora</th><th>Origen</th><th>Comprobante</th><th>Cliente</th><th>Método</th><th>N.º Op.</th><th>Usuario</th><th style="text-align:right">Total</th></tr>
+      </thead>
+      <tbody>${filasHtml}</tbody>
+    </table>
+
+    ${(tpl.piePagina || tpl.promoTexto) ? `
+      <div class="a4-foot">
+        <span>${esc(tpl.piePagina || '')}</span>
+        <strong>${esc(tpl.promoTexto || '')}</strong>
+      </div>
+    ` : ''}
+  </div>`;
 }
 
 function generarHTMLTicket80mm(datos = {}, forzarTipo = null) {
@@ -3020,9 +3054,24 @@ function imprimirTicket80mm(datos, forzarTipo = null) {
     toast('Tu usuario tiene desactivado el permiso de impresión', 'alerta');
     return;
   }
+  aplicarFormatoPaginaImpresion('80mm');
   const cont = $('#impresion');
   cont.className = 'print-80mm';
   cont.innerHTML = generarHTMLTicket80mm(datos, forzarTipo);
+  window.print();
+}
+
+function imprimirReporteA4(datos = {}) {
+  if (!tienePermiso('impresion.permitir')) {
+    toast('Tu usuario tiene desactivado el permiso de impresión', 'alerta');
+    return;
+  }
+  const tpl = obtenerPlantillaTicket('a4');
+  const modoColor = datos.modoColor || DB.impresion.modoColorA4 || 'color';
+  aplicarFormatoPaginaImpresion('a4', tpl.margenMm);
+  const cont = $('#impresion');
+  cont.className = 'print-a4' + (modoColor === 'bn' ? ' bn' : '');
+  cont.innerHTML = generarHTMLReporteA4(datos);
   window.print();
 }
 
@@ -3612,7 +3661,7 @@ function renderReportes() {
         <td class="num"><b>${soles(v.total)}</b></td>
         <td class="acc">
           <div class="acciones-celda">
-            <button type="button" class="btn-mini" data-reimprimir="${v.id}" title="Reimprimir ticket 80mm"><svg class="ico"><use href="#i-impresora"/></svg></button>
+            <button type="button" class="btn-mini" data-reimprimir="${v.id}" title="Reimprimir ticket"><svg class="ico"><use href="#i-impresora"/></svg></button>
             ${puedeModRep ? `
               <button type="button" class="btn-mini" data-editar-venta="${v.id}" title="Editar registro de venta (requiere contraseña secreta)"><svg class="ico"><use href="#i-edit"/></svg></button>
               <button type="button" class="btn-mini peligro" data-eliminar-venta="${v.id}" title="Eliminar completamente del registro (requiere contraseña secreta)"><svg class="ico"><use href="#i-trash"/></svg></button>
@@ -3856,21 +3905,11 @@ async function cerrarTurnoCaja() {
   toast('Turno cerrado y arqueado correctamente');
 }
 
-/* Modal de Impresión / Guardar PDF de Reportes (Selección Ticket 80mm vs Hoja A4 + Impresora + Color/B&N) */
+/* Modal de Impresión / Guardar PDF de Reportes (Selección Hoja A4 vs Ticket normal) */
 function abrirModalImprimirReporte() {
   formatoImpresionRep = 'a4';
   $$('#dlgImprimirReporte [data-fmt-rep]').forEach(b => b.classList.toggle('active', b.dataset.fmtRep === 'a4'));
   $('#bloqueOpcionesA4').hidden = false;
-
-  const impDefecto = DB.impresion.impReportes || 'Impresora_Oficina_A4';
-  const opcionesImp = [
-    impDefecto,
-    'Guardar como PDF (Carpeta: ' + (DB.config.carpetaDescarga || 'Descargas') + ')',
-    'HP LaserJet Pro A4',
-    'Epson EcoTank A4'
-  ];
-  const unicas = [...new Set(opcionesImp)];
-  $('#selImpresoraA4').innerHTML = unicas.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
   $('#selColorA4').value = DB.impresion.modoColorA4 || 'color';
   abrirDialogo('dlgImprimirReporte');
 }
@@ -3914,58 +3953,16 @@ function ejecutarImpresionReporte(e) {
     return;
   }
 
-  // Formato Hoja A4 con impresora seleccionada y modo A colores o Blanco y negro
-  const impresoraElegida = $('#selImpresoraA4').value;
-  const modoColor = $('#selColorA4').value;
-  const cont = $('#impresion');
-  cont.className = 'print-a4' + (modoColor === 'bn' ? ' bn' : '');
-
-  const filasHtml = filtradas.length
-    ? filtradas.map(v => `<tr>
-        <td>${fmtFechaHora(v.fecha)}</td>
-        <td>${esc(v.mesa)}</td>
-        <td>${esc(v.comprobante)} #${String(v.id).padStart(4, '0')}</td>
-        <td>${esc(v.cliente)}</td>
-        <td>${esc(v.metodo)}</td>
-        <td>${esc(v.referencia || '-')}</td>
-        <td>${esc(v.usuario)}</td>
-        <td style="text-align:right;font-weight:700">${soles(v.total)}</td>
-      </tr>`).join('')
-    : `<tr><td colspan="8" style="text-align:center;padding:18px">Sin registros en este periodo.</td></tr>`;
-
-  cont.innerHTML = `<div class="a4-sheet">
-    <div class="a4-head">
-      <div class="a4-brand">
-        <img src="${esc(DB.config.logoPrincipal || 'logo.png')}" alt="Logo">
-        <div>
-          <h1>${esc(DB.config.nombreLocal || "Juancho's")}</h1>
-          <p style="margin:2px 0;font-size:12px;color:#555">${esc(DB.config.lemaLocal || '')} · ${esc(DB.impresion.direccion || '')}</p>
-        </div>
-      </div>
-      <div style="text-align:right;font-size:12px">
-        <strong>${esc(etqPeriodo)}</strong><br>
-        <span>Impresora destino: ${esc(impresoraElegida)}</span><br>
-        <span>Fecha de emisión: ${fmtFechaHora(new Date().toISOString())}</span><br>
-        <span>Generado por: ${esc(sesion?.nombre || 'WILLOSIRIS')}</span>
-      </div>
-    </div>
-
-    <div class="a4-kpis">
-      <div class="a4-kpi"><small>TOTAL VENDIDO</small><b>${soles(total)}</b></div>
-      <div class="a4-kpi"><small>EFECTIVO</small><b>${soles(ef)}</b></div>
-      <div class="a4-kpi"><small>YAPE (INFORMATIVO)</small><b>${soles(yp)}</b></div>
-      <div class="a4-kpi"><small>N.º DE COBROS</small><b>${filtradas.length}</b></div>
-    </div>
-
-    <table class="a4-table">
-      <thead>
-        <tr><th>Fecha / Hora</th><th>Origen</th><th>Comprobante</th><th>Cliente</th><th>Método</th><th>N.º Op.</th><th>Usuario</th><th style="text-align:right">Total</th></tr>
-      </thead>
-      <tbody>${filasHtml}</tbody>
-    </table>
-  </div>`;
-
-  window.print();
+  // Formato Hoja A4 con plantilla editable A4 y modo A colores o Blanco y negro
+  const modoColor = $('#selColorA4').value || DB.impresion.modoColorA4 || 'color';
+  imprimirReporteA4({
+    modoColor,
+    periodoTitulo: etqPeriodo,
+    filas: filtradas,
+    total,
+    efectivo: ef,
+    yape: yp
+  });
 }
 
 function exportarVentasCsv() {
@@ -3993,7 +3990,6 @@ function cambiarSubtabAjustes(subId) {
   $$('#ajustes .subtab').forEach(s => s.classList.toggle('active', s.id === subId));
   if (subId === 'aj-impresion') renderImpresorasAjustes();
   if (subId === 'aj-supabase') renderSupabaseAjustes();
-  if (subId === 'aj-colores') renderColoresAjustes();
   if (subId === 'aj-licencia') renderLicenciaAjustes();
 }
 
@@ -4002,7 +3998,6 @@ function renderAjustes() {
   renderUsuariosAjustes();
   renderImpresorasAjustes();
   renderSupabaseAjustes();
-  renderColoresAjustes();
   renderLicenciaAjustes();
 }
 
@@ -4268,102 +4263,7 @@ async function elegirCarpetaDescarga() {
   toast(`Ubicación predeterminada guardada: ${val}`);
 }
 
-/* --- 8.2 Impresoras por Defecto (Conexión con Drivers del Navegador), 2 Plantillas de Ticket 80mm y Editor --- */
-async function modificarImpresoraPorDefecto(tipo) {
-  if (!exigirAdmin()) return;
-  const imp = DB.impresion;
-  const cfgMapa = {
-    caja80: {
-      campo: 'impCaja',
-      esA4: false,
-      titulo: 'Seleccionar impresora · Ticket 80mm (Caja)',
-      actual: imp.impCaja || 'Ticketera_Caja_80mm',
-      sugeridas: ['Ticketera_Caja_80mm', 'Epson_TM_T20III_80mm', 'Bixolon_SRP_350_80mm', 'Xprinter_XP_80C', 'POS_Thermal_80mm']
-    },
-    cocina80: {
-      campo: 'impCocina',
-      esA4: false,
-      titulo: 'Seleccionar impresora · Comanda Cocina 80mm',
-      actual: imp.impCocina || 'Ticketera_Cocina_80mm',
-      sugeridas: ['Ticketera_Cocina_80mm', 'Epson_Cocina_80mm', 'Xprinter_Cocina_Red', 'Ticketera_Barra_80mm']
-    },
-    a4: {
-      campo: 'impReportes',
-      esA4: true,
-      titulo: 'Seleccionar impresora · Reportes Hoja A4',
-      actual: imp.impReportes || 'Impresora_Oficina_A4',
-      sugeridas: ['Impresora_Oficina_A4', 'HP_LaserJet_Pro_A4', 'Epson_EcoTank_L3250_A4', 'Canon_Pixma_A4', 'Guardar_PDF_Automatico']
-    }
-  }[tipo];
-  if (!cfgMapa) return;
-
-  const opciones = [...new Set([cfgMapa.actual, ...cfgMapa.sugeridas])].map(n => ({ valor: n, etiqueta: n }));
-  const datos = await pedirFormulario({
-    titulo: cfgMapa.titulo,
-    texto: 'Puedes abrir directamente los ajustes de impresión del navegador para elegir cualquier impresora con drivers instalados en tu máquina, o guardar el nombre de tu cola por defecto.',
-    textoOk: 'Aplicar',
-    campos: [
-      {
-        nombre: 'accionDialogo',
-        etiqueta: 'Modo de configuración',
-        tipo: 'select',
-        valor: 'abrir_navegador',
-        opciones: [
-          { valor: 'abrir_navegador', etiqueta: 'Abrir ajustes del navegador ahora para seleccionar driver e imprimir prueba' },
-          { valor: 'solo_guardar', etiqueta: 'Solo guardar nombre de impresora predeterminada' }
-        ]
-      },
-      { nombre: 'seleccionada', etiqueta: 'Impresoras frecuentes / detectadas', tipo: 'select', valor: cfgMapa.actual, opciones },
-      { nombre: 'personalizada', etiqueta: 'Nombre del driver o cola instalada (opcional)', valor: '', placeholder: 'Dejar vacío para usar la seleccionada arriba', maxlength: 60 }
-    ]
-  });
-  if (!datos) return;
-  const nuevoNombre = datos.personalizada || datos.seleccionada || cfgMapa.actual;
-  DB.impresion[cfgMapa.campo] = nuevoNombre;
-  registrarActividad('Impresora por defecto modificada', `${cfgMapa.campo}: ${nuevoNombre}`);
-  guardarDB();
-  renderImpresorasAjustes();
-  toast(`Impresora predeterminada: ${nuevoNombre}`);
-
-  if (datos.accionDialogo === 'abrir_navegador') {
-    if (cfgMapa.esA4) {
-      const cont = $('#impresion');
-      cont.className = 'print-a4';
-      cont.innerHTML = `<div class="a4-sheet">
-        <div class="a4-head">
-          <div class="a4-brand">
-            <img src="${esc(DB.config.logoPrincipal || 'logo.png')}" alt="Logo">
-            <div>
-              <h1>${esc(DB.config.nombreLocal || "Juancho's")} · Prueba de Driver A4</h1>
-              <p style="margin:2px 0;font-size:12px;color:#555">Cola seleccionada: ${esc(nuevoNombre)}</p>
-            </div>
-          </div>
-        </div>
-        <p style="font-size:13px">Selecciona la impresora con drivers instalados en el diálogo del navegador para dejarla predeterminada en tus reportes A4.</p>
-      </div>`;
-      window.print();
-    } else {
-      imprimirTicket80mm({
-        subtitulo: `PRUEBA DE IMPRESORA · ${nuevoNombre}`,
-        checkLabel: 'MESA 1 · SALÓN PRINCIPAL',
-        esComandaCocina: tipo === 'cocina80',
-        ordenNum: 1,
-        cajero: sesion?.nombre || 'WILLOSIRIS',
-        cliente: 'Configuración de Driver',
-        lineas: [
-          { cant: 1, nombre: 'Salchipapa Clásica (Prueba)', precioUnit: 15.00, subtotal: 15.00 }
-        ],
-        subtotal: 12.71,
-        igv: 2.29,
-        total: 15.00,
-        metodo: 'EFECTIVO',
-        recibido: 15.00,
-        vuelto: 0
-      }, 'interno');
-    }
-  }
-}
-
+/* --- 8.2 Comportamiento de Impresión Web y Editor de Plantillas (Control Interno, Cliente y Hoja A4) --- */
 function actualizarBadgeModoTicket() {
   const usaCliente = !!DB.impresion.usarTicketCliente;
   const lblModo = $('#lblModoTicketActivo');
@@ -4377,7 +4277,10 @@ function actualizarBadgeModoTicket() {
 }
 
 function cargarPlantillaEnFormularioTicket(tipo) {
-  plantillaEditando = tipo === 'cliente' ? 'cliente' : 'interno';
+  plantillaEditando = tipo === 'a4' ? 'a4' : tipo === 'cliente' ? 'cliente' : 'interno';
+  const esA4 = plantillaEditando === 'a4';
+  const esCliente = plantillaEditando === 'cliente';
+
   $$('#tabsPlantillaTicket button').forEach(b => {
     const act = b.dataset.tpl === plantillaEditando;
     b.classList.toggle('active', act);
@@ -4385,14 +4288,39 @@ function cargarPlantillaEnFormularioTicket(tipo) {
   });
   const lbl = $('#etqPlantillaEditando');
   if (lbl) {
-    lbl.textContent = plantillaEditando === 'cliente'
-      ? 'Ticket Normal para Cliente'
-      : 'Control Interno';
+    lbl.textContent = esA4
+      ? 'Hoja A4 (Reportes)'
+      : esCliente
+        ? 'Ticket Normal para Cliente'
+        : 'Control Interno';
   }
   const badgePrev = $('#badgeTipoVistaPrevia');
   if (badgePrev) {
-    badgePrev.className = 'badge ' + (plantillaEditando === 'cliente' ? 'efectivo' : 'ok');
-    badgePrev.textContent = plantillaEditando === 'cliente' ? 'Ticket Cliente' : 'Control Interno';
+    badgePrev.className = 'badge ' + (esA4 ? 'admin' : esCliente ? 'efectivo' : 'ok');
+    badgePrev.textContent = esA4 ? 'Hoja A4' : esCliente ? 'Ticket Cliente' : 'Control Interno';
+  }
+  const descPrev = $('#descVistaPrevia');
+  if (descPrev) {
+    descPrev.textContent = esA4
+      ? 'Vista previa del reporte en Hoja A4. La hoja A4 se usa únicamente para reportes de ventas y arqueo.'
+      : esCliente
+        ? 'Vista previa del comprobante para el cliente en ticketera térmica.'
+        : 'En Control Interno, el número de mesa se muestra gigante al centro (visible a 3 metros), seguido de los platos a atender y luego el detalle con precios.';
+  }
+
+  // Ocultar campos exclusivos de ticketera cuando se edita la Hoja A4
+  if ($('#bloqueEtiquetasTicket')) $('#bloqueEtiquetasTicket').hidden = esA4;
+  if ($('#wrapLblCodigo')) $('#wrapLblCodigo').hidden = esA4;
+  if ($('#wrapTktBarcode')) $('#wrapTktBarcode').hidden = esA4;
+  if ($('#lblSwitchImpuestosTit')) {
+    $('#lblSwitchImpuestosTit').textContent = esA4
+      ? 'Mostrar tarjetas de resumen (KPIs de Total, Efectivo, Yape y Cobros)'
+      : 'Mostrar desglose de Subtotal e IGV';
+  }
+  if ($('#lblSwitchImpuestosSub')) {
+    $('#lblSwitchImpuestosSub').textContent = esA4
+      ? 'Incluye los 4 recuadros de totales sobre la tabla de ventas del reporte A4.'
+      : 'Si se desactiva, muestra directamente el Total de los productos.';
   }
 
   const tpl = obtenerPlantillaTicket(plantillaEditando);
@@ -4418,9 +4346,9 @@ function cargarPlantillaEnFormularioTicket(tipo) {
   $('#tktLblRecibido').value = tpl.lblRecibido ?? 'RECIBIDO';
   $('#tktLblVuelto').value = tpl.lblVuelto ?? 'VUELTO';
 
-  $('#tktMargen').value = String(tpl.margenMm ?? 4);
-  $('#tktFontTitulo').value = String(tpl.fontTituloPx ?? 16);
-  $('#tktFontCuerpo').value = String(tpl.fontCuerpoPx ?? 12);
+  $('#tktMargen').value = String(tpl.margenMm ?? (esA4 ? 10 : 4));
+  $('#tktFontTitulo').value = String(tpl.fontTituloPx ?? (esA4 ? 18 : 16));
+  $('#tktFontCuerpo').value = String(tpl.fontCuerpoPx ?? (esA4 ? 11 : 12));
 
   $('#tktPie').value = tpl.piePagina ?? '';
   $('#tktPromo').value = tpl.promoTexto ?? '';
@@ -4433,10 +4361,6 @@ function cargarPlantillaEnFormularioTicket(tipo) {
 
 function renderImpresorasAjustes() {
   const imp = DB.impresion;
-  if ($('#lblImpCajaActual')) $('#lblImpCajaActual').textContent = imp.impCaja || 'Ticketera_Caja_80mm';
-  if ($('#lblImpCocinaActual')) $('#lblImpCocinaActual').textContent = imp.impCocina || 'Ticketera_Cocina_80mm';
-  if ($('#lblImpA4Actual')) $('#lblImpA4Actual').textContent = imp.impReportes || 'Impresora_Oficina_A4';
-
   $('#swImpCocina').checked = !!imp.autoCocina;
   $('#swImpCobro').checked = imp.autoCobro !== false;
   $('#swImpPrecuenta').checked = imp.autoPrecuenta !== false;
@@ -4449,6 +4373,9 @@ function renderImpresorasAjustes() {
 
 function leerFormularioImpresorasEnVivo() {
   const imp = DB.impresion;
+  const esA4 = plantillaEditando === 'a4';
+  const prevTpl = obtenerPlantillaTicket(plantillaEditando);
+
   imp.autoCocina = $('#swImpCocina').checked;
   imp.autoCobro = $('#swImpCobro').checked;
   imp.autoPrecuenta = $('#swImpPrecuenta').checked;
@@ -4456,6 +4383,7 @@ function leerFormularioImpresorasEnVivo() {
   imp.usarTicketCliente = $('#swModoTicketCliente')?.checked || false;
 
   const tplEditada = {
+    ...prevTpl,
     tituloMarca: $('#tktTituloMarca').value.trim(),
     subtituloMarca: $('#tktSubtituloMarca').value.trim(),
     lineaRuc: $('#tktLineaRuc').value.trim(),
@@ -4463,30 +4391,35 @@ function leerFormularioImpresorasEnVivo() {
     ciudad: $('#tktCiudad').value.trim(),
     telefono: $('#tktTelefono').value.trim(),
     tituloDoc: $('#tktTituloDoc').value.trim(),
-    lblCheck: $('#tktLblCheck').value.trim() || 'Check:',
-    lblCajero: $('#tktLblCajero').value.trim() || 'Cajero:',
-    lblOrden: $('#tktLblOrden').value.trim() || 'Orden #:',
-    lblCliente: $('#tktLblCliente').value.trim() || 'Cliente:',
-    lblFecha: $('#tktLblFecha').value.trim() || 'FECHA:',
-    lblHora: $('#tktLblHora').value.trim() || 'HORA:',
-    lblSubtotal: $('#tktLblSubtotal').value.trim() || 'SUBTOTAL',
-    lblIgv: $('#tktLblIgv').value.trim() || 'IGV (18%)',
-    lblTotal: $('#tktLblTotal').value.trim() || 'TOTAL',
-    lblMetodo: $('#tktLblMetodo').value.trim() || 'MÉTODO PAGO',
-    lblRecibido: $('#tktLblRecibido').value.trim() || 'RECIBIDO',
-    lblVuelto: $('#tktLblVuelto').value.trim() || 'VUELTO',
-    margenMm: Math.max(0, Math.min(12, parseInt($('#tktMargen').value, 10) || 4)),
-    fontTituloPx: Math.max(12, Math.min(24, parseInt($('#tktFontTitulo').value, 10) || 16)),
-    fontCuerpoPx: Math.max(10, Math.min(16, parseInt($('#tktFontCuerpo').value, 10) || 12)),
+    margenMm: Math.max(0, Math.min(esA4 ? 20 : 12, parseInt($('#tktMargen').value, 10) || (esA4 ? 10 : 4))),
+    fontTituloPx: Math.max(12, Math.min(28, parseInt($('#tktFontTitulo').value, 10) || (esA4 ? 18 : 16))),
+    fontCuerpoPx: Math.max(10, Math.min(18, parseInt($('#tktFontCuerpo').value, 10) || (esA4 ? 11 : 12))),
     piePagina: $('#tktPie').value.trim(),
     promoTexto: $('#tktPromo').value.trim(),
-    lblCodigo: $('#tktLblCodigo').value.trim(),
     mostrarLogo: $('#swTktLogo').checked,
-    mostrarImpuestos: $('#swTktImpuestos').checked,
-    mostrarBarcode: $('#swTktBarcode').checked
+    mostrarImpuestos: $('#swTktImpuestos').checked
   };
 
-  if (plantillaEditando === 'cliente') {
+  if (!esA4) {
+    tplEditada.lblCheck = $('#tktLblCheck').value.trim() || 'Check:';
+    tplEditada.lblCajero = $('#tktLblCajero').value.trim() || 'Cajero:';
+    tplEditada.lblOrden = $('#tktLblOrden').value.trim() || 'Orden #:';
+    tplEditada.lblCliente = $('#tktLblCliente').value.trim() || 'Cliente:';
+    tplEditada.lblFecha = $('#tktLblFecha').value.trim() || 'FECHA:';
+    tplEditada.lblHora = $('#tktLblHora').value.trim() || 'HORA:';
+    tplEditada.lblSubtotal = $('#tktLblSubtotal').value.trim() || 'SUBTOTAL';
+    tplEditada.lblIgv = $('#tktLblIgv').value.trim() || 'IGV (18%)';
+    tplEditada.lblTotal = $('#tktLblTotal').value.trim() || 'TOTAL';
+    tplEditada.lblMetodo = $('#tktLblMetodo').value.trim() || 'MÉTODO PAGO';
+    tplEditada.lblRecibido = $('#tktLblRecibido').value.trim() || 'RECIBIDO';
+    tplEditada.lblVuelto = $('#tktLblVuelto').value.trim() || 'VUELTO';
+    tplEditada.lblCodigo = $('#tktLblCodigo').value.trim();
+    tplEditada.mostrarBarcode = $('#swTktBarcode').checked;
+  }
+
+  if (esA4) {
+    imp.plantillaA4 = tplEditada;
+  } else if (plantillaEditando === 'cliente') {
     imp.plantillaCliente = tplEditada;
   } else {
     imp.plantillaInterno = tplEditada;
@@ -4500,10 +4433,29 @@ function cambiarPlantillaTicketEditando(nuevoTipo) {
   actualizarVistaPrevia80mm();
 }
 
+function datosEjemploReporteA4() {
+  const ahoraIso = new Date().toISOString();
+  return {
+    modoColor: DB.impresion.modoColorA4 || 'color',
+    periodoTitulo: obtenerPlantillaTicket('a4').tituloDoc || 'REPORTE GENERAL DE VENTAS',
+    total: 92.40,
+    efectivo: 48.50,
+    yape: 43.90,
+    filas: [
+      { id: 83, fecha: ahoraIso, mesa: 'Mesa 1 · Salón', comprobante: 'Ticket Interno', cliente: 'Público general', metodo: 'Yape', referencia: '94827163', usuario: sesion?.nombre || 'WILLOSIRIS', total: 43.90 },
+      { id: 82, fecha: ahoraIso, mesa: 'Mesa 4 · Salón', comprobante: 'Boleta', cliente: 'Carlos Mendoza', metodo: 'Efectivo', referencia: 'Directo', usuario: sesion?.nombre || 'WILLOSIRIS', total: 48.50 }
+    ]
+  };
+}
+
 function actualizarVistaPrevia80mm() {
-  const prev = $('#vistaPreviaTicket80');
-  if (!prev) return;
-  prev.outerHTML = generarHTMLTicket80mm({
+  const wrap = $('#vistaPreviaContenedor');
+  if (!wrap) return;
+  if (plantillaEditando === 'a4') {
+    wrap.innerHTML = generarHTMLReporteA4(datosEjemploReporteA4());
+    return;
+  }
+  wrap.innerHTML = generarHTMLTicket80mm({
     subtitulo: plantillaEditando === 'cliente' ? 'COMPROBANTE DE VENTA #00083' : 'TICKET DE CONTROL INTERNO #00083',
     checkLabel: 'MESA 1 · SALÓN PRINCIPAL',
     ordenNum: 83,
@@ -4528,15 +4480,16 @@ function guardarConfigImpresoras(e) {
   e.preventDefault();
   if (!exigirAdmin()) return;
   leerFormularioImpresorasEnVivo();
-  registrarActividad('Impresoras y plantillas guardadas', `Modo: ${DB.impresion.usarTicketCliente ? 'Cliente' : 'Control Interno'}`);
+  const nombreTpl = plantillaEditando === 'a4' ? 'Hoja A4' : plantillaEditando === 'cliente' ? 'Cliente' : 'Control Interno';
+  registrarActividad('Plantillas de impresión guardadas', `Editada: ${nombreTpl} · Modo activo: ${DB.impresion.usarTicketCliente ? 'Cliente' : 'Control Interno'}`);
   guardarDB();
   renderImpresorasAjustes();
-  toast(`Plantilla (${plantillaEditando === 'cliente' ? 'Cliente' : 'Control Interno'}) e impresoras guardadas`);
+  toast(`Diseño de ${nombreTpl} guardado correctamente`);
 }
 
-/* --- 8.3 Conexión a Supabase (Como en la imagen de referencia + Seguridad 5s) --- */
-const TEXTO_SQL_SUPABASE = `-- SCRIPT SQL PARA SUPABASE (JUANCHO'S POS - POSTGRESQL)
-CREATE TABLE IF NOT EXISTS almacen (
+/* --- 8.3 Conexión a Supabase REST v1 (Publishable Key en navegador + Políticas RLS) --- */
+const TEXTO_SQL_SUPABASE = `-- SCRIPT SQL PARA SUPABASE (JUANCHO'S POS - POSTGRESQL + RLS REST v1)
+CREATE TABLE IF NOT EXISTS public.almacen (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   descripcion TEXT NOT NULL,
   compatibilidad TEXT DEFAULT 'GENERAL',
@@ -4550,7 +4503,7 @@ CREATE TABLE IF NOT EXISTS almacen (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS clientes (
+CREATE TABLE IF NOT EXISTS public.clientes (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   origen TEXT NOT NULL DEFAULT 'SALON',
   nombre TEXT NOT NULL,
@@ -4560,7 +4513,7 @@ CREATE TABLE IF NOT EXISTS clientes (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS usuarios_pos (
+CREATE TABLE IF NOT EXISTS public.usuarios_pos (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
   rol TEXT NOT NULL DEFAULT 'caja',
@@ -4572,7 +4525,7 @@ CREATE TABLE IF NOT EXISTS usuarios_pos (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS ventas_pos (
+CREATE TABLE IF NOT EXISTS public.ventas_pos (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   origen TEXT NOT NULL,
   comprobante TEXT NOT NULL DEFAULT 'Ticket Interno',
@@ -4585,25 +4538,69 @@ CREATE TABLE IF NOT EXISTS ventas_pos (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS respaldos_json (
+CREATE TABLE IF NOT EXISTS public.respaldos_json (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   nombre_local TEXT NOT NULL,
   payload JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
-);`;
+);
+
+-- Permisos REST v1 y Políticas RLS para acceso desde la aplicación web POS
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+
+ALTER TABLE public.almacen ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clientes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.usuarios_pos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ventas_pos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.respaldos_json ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "pos_almacen_all" ON public.almacen;
+CREATE POLICY "pos_almacen_all" ON public.almacen FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "pos_clientes_all" ON public.clientes;
+CREATE POLICY "pos_clientes_all" ON public.clientes FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "pos_usuarios_pos_all" ON public.usuarios_pos;
+CREATE POLICY "pos_usuarios_pos_all" ON public.usuarios_pos FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "pos_ventas_pos_all" ON public.ventas_pos;
+CREATE POLICY "pos_ventas_pos_all" ON public.ventas_pos FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "pos_respaldos_json_all" ON public.respaldos_json;
+CREATE POLICY "pos_respaldos_json_all" ON public.respaldos_json FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);`;
+
+function obtenerRestBaseSupabase(rawUrl) {
+  let limpio = String(rawUrl || '').trim().replace(/\/+$/, '');
+  if (!limpio) return '';
+  if (!/\/rest\/v1$/i.test(limpio)) {
+    limpio += '/rest/v1';
+  }
+  return limpio;
+}
+
+function headersSupabase(key, extra = {}) {
+  const h = { apikey: String(key || '').trim(), ...extra };
+  if (h.apikey.startsWith('eyJ')) {
+    h.Authorization = `Bearer ${h.apikey}`;
+  }
+  return h;
+}
 
 function renderSupabaseAjustes() {
   const s = DB.supabase;
   $('#supaUrl').value = s.url || '';
   $('#supaKey').value = s.anonKey || '';
+  if ($('#supaSecretKey')) $('#supaSecretKey').value = s.secretKey || '';
   $('#sqlSupabaseCode').textContent = TEXTO_SQL_SUPABASE;
   const badge = $('#supaEstadoBadge');
   const tieneCred = !!(s.url && s.anonKey);
-  badge.textContent = tieneCred ? 'DESBLOQUEADO' : 'SIN CONEXIÓN';
-  badge.className = 'supa-badge' + (tieneCred ? '' : ' desconectado');
+  badge.textContent = tieneCred ? (s.conectado ? 'CONECTADO' : 'REVISAR CONEXIÓN') : 'SIN CONEXIÓN';
+  badge.className = 'supa-badge' + (tieneCred && s.conectado ? '' : ' desconectado');
   $('#supaMensajeEstado').textContent = s.ultimaSync
-    ? `Última sincronización: ${fmtFechaHora(s.ultimaSync)}`
-    : 'Credenciales listas para sincronizar con tu proyecto Supabase.';
+    ? `Última verificación / sincronización: ${fmtFechaHora(s.ultimaSync)}`
+    : 'Credenciales REST v1 listas para conectar con tu proyecto Supabase.';
 }
 
 async function copiarSqlSupabase() {
@@ -4617,97 +4614,169 @@ async function copiarSqlSupabase() {
 }
 
 async function probarConexionSupabase() {
-  const url = $('#supaUrl').value.trim();
+  const rawUrl = $('#supaUrl').value.trim();
   const key = $('#supaKey').value.trim();
-  if (!url || !key) {
-    toast('Configura primero la URL y la Anon Key de Supabase', 'error');
+  const restBase = obtenerRestBaseSupabase(rawUrl);
+  if (!restBase || !key) {
+    toast('Configura primero la API URL y la Publishable Key de Supabase', 'error');
     return;
   }
-  $('#supaMensajeEstado').textContent = 'Verificando alcance del endpoint de Supabase...';
+  if (key.startsWith('sb_secret_')) {
+    toast('Usa la Publishable Key en el navegador (Supabase bloquea Secret Keys desde frontend)', 'error');
+    return;
+  }
+  $('#supaMensajeEstado').textContent = 'Verificando conexión real con Supabase REST v1...';
   try {
-    const res = await fetch(`${url.replace(/\/$/, '')}/rest/v1/`, {
-      method: 'GET',
-      headers: { apikey: key, Authorization: `Bearer ${key}` }
-    });
-    DB.supabase.conectado = res.ok || res.status === 200 || res.status === 401;
+    const tablas = ['respaldos_json', 'almacen', 'clientes', 'usuarios_pos', 'ventas_pos'];
+    const checks = await Promise.all(
+      tablas.map(t =>
+        fetch(`${restBase}/${t}?select=id&limit=1`, {
+          method: 'GET',
+          headers: headersSupabase(key)
+        })
+      )
+    );
+    const okCount = checks.filter(r => r.ok).length;
+    DB.supabase.url = rawUrl;
+    DB.supabase.anonKey = key;
+    DB.supabase.conectado = okCount === tablas.length;
     DB.supabase.ultimaSync = new Date().toISOString();
     guardarDB();
     renderSupabaseAjustes();
-    toast('Conexión con Supabase verificada y reconectada');
-  } catch (_) {
-    DB.supabase.ultimaSync = new Date().toISOString();
+
+    if (okCount === tablas.length) {
+      $('#supaMensajeEstado').textContent = `Conexión REST v1 exitosa (${okCount}/${tablas.length} tablas listas) · ${fmtFechaHora(DB.supabase.ultimaSync)}`;
+      toast('Conexión con Supabase verificada correctamente (5/5 tablas)');
+    } else {
+      const errRes = checks.find(r => !r.ok);
+      let detalle = `HTTP ${errRes?.status || 'Error'}`;
+      try {
+        const j = await errRes.json();
+        if (j?.message) detalle = j.message;
+      } catch (_) {}
+      $('#supaMensajeEstado').textContent = `Tablas accesibles: ${okCount}/${tablas.length} · ${detalle}`;
+      toast(`Conexión parcial (${okCount}/${tablas.length} tablas). Revisa el SQL/RLS en Supabase.`, 'alerta');
+    }
+  } catch (err) {
+    DB.supabase.conectado = false;
     guardarDB();
     renderSupabaseAjustes();
-    toast('Credenciales verificadas en modo local / híbrido');
+    $('#supaMensajeEstado').textContent = `No se pudo contactar a Supabase (${err?.message || 'sin red'}).`;
+    toast('No se pudo conectar con Supabase. Verifica tu conexión a internet o la URL.', 'error');
   }
 }
 
 async function subirDatosSupabase() {
-  const url = DB.supabase.url;
+  const restBase = obtenerRestBaseSupabase(DB.supabase.url);
   const key = DB.supabase.anonKey;
-  if (!url || !key) {
+  if (!restBase || !key) {
     toast('No hay credenciales de Supabase configuradas', 'error');
     return;
   }
+  const payloadSeguro = {
+    ...DB,
+    supabase: { ...DB.supabase, secretKey: '' }
+  };
   try {
-    await fetch(`${url.replace(/\/$/, '')}/rest/v1/respaldos_json`, {
+    const res = await fetch(`${restBase}/respaldos_json`, {
       method: 'POST',
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
+      headers: headersSupabase(key, {
         'Content-Type': 'application/json',
         Prefer: 'return=minimal'
-      },
-      body: JSON.stringify({ nombre_local: DB.config.nombreLocal, payload: DB })
+      }),
+      body: JSON.stringify({ nombre_local: DB.config.nombreLocal || "Juancho's", payload: payloadSeguro })
     });
-  } catch (_) {}
-  DB.supabase.ultimaSync = new Date().toISOString();
-  guardarDB();
-  renderSupabaseAjustes();
-  toast('Respaldo sincronizado con la nube de Supabase');
+    if (!res.ok) {
+      let msg = `Error HTTP ${res.status}`;
+      try {
+        const errJson = await res.json();
+        if (errJson?.code === '42501') {
+          msg = 'Política RLS bloqueando escritura: copia y ejecuta el Script SQL completo en Supabase SQL Editor';
+        } else if (errJson?.message) {
+          msg = errJson.message;
+        }
+      } catch (_) {}
+      DB.supabase.conectado = false;
+      guardarDB();
+      renderSupabaseAjustes();
+      $('#supaMensajeEstado').textContent = msg;
+      toast(msg, 'error');
+      return;
+    }
+    DB.supabase.conectado = true;
+    DB.supabase.ultimaSync = new Date().toISOString();
+    guardarDB();
+    renderSupabaseAjustes();
+    toast('Respaldo sincronizado con la nube de Supabase');
+  } catch (err) {
+    toast(`Error de red al subir a Supabase: ${err?.message || 'sin conexión'}`, 'error');
+  }
 }
 
 async function descargarDatosSupabase() {
-  const url = DB.supabase.url;
+  const restBase = obtenerRestBaseSupabase(DB.supabase.url);
   const key = DB.supabase.anonKey;
-  if (!url || !key) {
+  if (!restBase || !key) {
     toast('No hay credenciales de Supabase configuradas', 'error');
     return;
   }
   try {
-    const r = await fetch(`${url.replace(/\/$/, '')}/rest/v1/respaldos_json?select=payload&order=id.desc&limit=1`, {
-      headers: { apikey: key, Authorization: `Bearer ${key}` }
+    const r = await fetch(`${restBase}/respaldos_json?select=payload&order=id.desc&limit=1`, {
+      headers: headersSupabase(key)
     });
-    if (r.ok) {
-      const arr = await r.json();
-      if (Array.isArray(arr) && arr[0]?.payload) {
-        DB = normalizarDB(arr[0].payload);
-        guardarDB();
-        renderTodo();
-        toast('Datos restaurados desde Supabase Cloud');
-        return;
-      }
+    if (!r.ok) {
+      let msg = `Error HTTP ${r.status}`;
+      try {
+        const errJson = await r.json();
+        if (errJson?.message) msg = errJson.message;
+      } catch (_) {}
+      toast(`No se pudo consultar la nube: ${msg}`, 'error');
+      return;
     }
-  } catch (_) {}
-  toast('Sincronización consultada · Sin cambios remotos pendientes');
+    const arr = await r.json();
+    if (Array.isArray(arr) && arr[0]?.payload) {
+      const secretLocal = DB.supabase.secretKey;
+      DB = normalizarDB(arr[0].payload);
+      if (!DB.supabase.secretKey && secretLocal) DB.supabase.secretKey = secretLocal;
+      DB.supabase.ultimaSync = new Date().toISOString();
+      DB.supabase.conectado = true;
+      guardarDB();
+      renderTodo();
+      toast('Datos restaurados desde Supabase Cloud');
+      return;
+    }
+    DB.supabase.conectado = true;
+    DB.supabase.ultimaSync = new Date().toISOString();
+    guardarDB();
+    renderSupabaseAjustes();
+    toast('Conexión OK · Aún no hay respaldos guardados en la nube', 'alerta');
+  } catch (err) {
+    toast(`Error de red al consultar Supabase: ${err?.message || 'sin conexión'}`, 'error');
+  }
 }
 
 async function editarCredencialesSupabase() {
   if (!exigirAdmin()) return;
   const datos = await pedirFormulario({
-    titulo: 'Editar URL y Anon Key de Supabase',
+    titulo: 'Editar credenciales de Supabase',
     texto: 'Por seguridad, ingresa tu contraseña de Administrador y espera los 5 segundos de desbloqueo temporal.',
     textoOk: 'Guardar',
     requiereSeguridad5s: true,
     campos: [
-      { nombre: 'url', etiqueta: 'Supabase Project URL', valor: DB.supabase.url, placeholder: 'https://xxxx.supabase.co' },
-      { nombre: 'key', etiqueta: 'Supabase Publishable / Anon Key', valor: DB.supabase.anonKey, placeholder: 'sb_publishable_...' }
+      { nombre: 'url', etiqueta: 'API URL (REST v1)', valor: DB.supabase.url, placeholder: 'https://xxxx.supabase.co/rest/v1/' },
+      { nombre: 'key', etiqueta: 'Publishable Key', valor: DB.supabase.anonKey, placeholder: 'sb_publishable_...' },
+      { nombre: 'secretKey', etiqueta: 'Secret Key (Respaldo de administrador)', valor: DB.supabase.secretKey || '', placeholder: 'sb_secret_...' }
     ],
-    validar: d => (!d.url || !d.key ? 'Completa ambos campos de conexión.' : '')
+    validar: d => {
+      if (!d.url || !d.key) return 'Completa la API URL y la Publishable Key.';
+      if (d.key.startsWith('sb_secret_')) return 'En Publishable Key debes colocar la clave sb_publishable_... (no la Secret Key).';
+      return '';
+    }
   });
   if (!datos) return;
   DB.supabase.url = datos.url;
   DB.supabase.anonKey = datos.key;
+  DB.supabase.secretKey = datos.secretKey || '';
   DB.supabase.conectado = true;
   registrarActividad('Conexión Supabase editada', datos.url);
   guardarDB();
@@ -4719,7 +4788,7 @@ async function eliminarConexionSupabase() {
   if (!exigirAdmin()) return;
   const ok = await confirmar({
     titulo: '¿Eliminar conexión a Supabase?',
-    texto: 'Se borrarán la URL y la clave Anon guardadas en este equipo. Ingresa la contraseña de administrador y espera 5 segundos.',
+    texto: 'Se borrarán la URL y las claves guardadas en este equipo. Ingresa la contraseña de administrador y espera 5 segundos.',
     textoOk: 'Eliminar conexión',
     requierePin: true,
     segundos: 5
@@ -4727,6 +4796,7 @@ async function eliminarConexionSupabase() {
   if (!ok) return;
   DB.supabase.url = '';
   DB.supabase.anonKey = '';
+  DB.supabase.secretKey = '';
   DB.supabase.conectado = false;
   registrarActividad('Conexión Supabase eliminada', 'Credenciales limpiadas');
   guardarDB();
@@ -4734,79 +4804,7 @@ async function eliminarConexionSupabase() {
   toast('Conexión a Supabase eliminada');
 }
 
-/* --- 8.4 Cinco Temas Predefinidos Curados + Colores Personalizados y Licencia --- */
-function renderColoresAjustes() {
-  const grid = $('#gridTemasPredefinidos');
-  if (grid) {
-    const actualId = DB.temaPredefinido || 'brasa_nocturna';
-    grid.innerHTML = TEMAS_PREDEFINIDOS.map(t => {
-      const activo = t.id === actualId && (!DB.coloresCustom || !Object.keys(DB.coloresCustom).length);
-      return `<button type="button" class="tema-preset-card ${activo ? 'activo' : ''}" data-tema-preset="${esc(t.id)}">
-        <div class="tema-preset-swatches">
-          <span style="background:${t.colores['--bg']}"></span>
-          <span style="background:${t.colores['--bg-elev']}"></span>
-          <span style="background:${t.colores['--acento']}"></span>
-          <span style="background:${t.colores['--ok']}"></span>
-          <span style="background:${t.colores['--yape']}"></span>
-        </div>
-        <div class="tema-preset-info">
-          <strong>${esc(t.nombre)}</strong>
-          <small>${esc(t.subtitulo)}</small>
-        </div>
-        <span class="badge ${activo ? 'ok' : ''}">${activo ? 'Activo' : (t.modoBase === 'light' ? 'Claro' : 'Oscuro')}</span>
-      </button>`;
-    }).join('');
-  }
-
-  $$('#gridColoresTema input[type="color"]').forEach(inp => {
-    const v = inp.dataset.var;
-    const preset = TEMAS_PREDEFINIDOS.find(x => x.id === DB.temaPredefinido);
-    if (DB.coloresCustom && DB.coloresCustom[v]) {
-      inp.value = DB.coloresCustom[v];
-    } else if (preset && preset.colores[v]) {
-      inp.value = preset.colores[v];
-    }
-  });
-}
-
-function aplicarTemaPredefinido(id) {
-  if (!exigirAdmin()) return;
-  const preset = TEMAS_PREDEFINIDOS.find(x => x.id === id);
-  if (!preset) return;
-  DB.temaPredefinido = preset.id;
-  DB.tema = preset.modoBase;
-  DB.coloresCustom = { ...preset.colores };
-  aplicarTema(DB.tema);
-  DB.coloresCustom = {};
-  aplicarColoresPersonalizados();
-  guardarDB();
-  renderColoresAjustes();
-  toast(`Tema "${preset.nombre}" aplicado`);
-}
-
-function guardarColoresTema() {
-  if (!exigirAdmin()) return;
-  const mapa = {};
-  $$('#gridColoresTema input[type="color"]').forEach(inp => {
-    mapa[inp.dataset.var] = inp.value;
-  });
-  DB.coloresCustom = mapa;
-  aplicarColoresPersonalizados();
-  guardarDB();
-  renderColoresAjustes();
-  toast('Paleta de colores personalizada aplicada');
-}
-
-function restablecerColoresTema() {
-  if (!exigirAdmin()) return;
-  DB.temaPredefinido = 'brasa_nocturna';
-  DB.tema = 'dark';
-  DB.coloresCustom = {};
-  aplicarTema('dark');
-  guardarDB();
-  renderColoresAjustes();
-  toast('Tema original Brasa Nocturna restaurado');
-}
+/* --- 8.4 Licencia y Marca --- */
 
 async function desbloquearLicenciaDobleClave() {
   if (!exigirAdmin()) return;
@@ -4970,6 +4968,8 @@ function actualizarRelojYConexion() {
 
 function init() {
   aplicarTema(DB.tema || 'dark');
+  aplicarFormatoPaginaImpresion('80mm');
+  window.addEventListener('afterprint', () => aplicarFormatoPaginaImpresion('80mm'));
   pintarMarcaLocal();
   actualizarRelojYConexion();
   setInterval(actualizarRelojYConexion, 15000);
@@ -5366,11 +5366,7 @@ function init() {
   });
   $('#btnReiniciar').addEventListener('click', reiniciarSistema);
 
-  // Ajustes: Botones de Impresora por defecto (80mm Caja, 80mm Cocina y Hoja A4), Modo Principal y 2 Plantillas
-  $('#btnModImp80mm')?.addEventListener('click', () => modificarImpresoraPorDefecto('caja80'));
-  $('#btnModImpCocina')?.addEventListener('click', () => modificarImpresoraPorDefecto('cocina80'));
-  $('#btnModImpA4')?.addEventListener('click', () => modificarImpresoraPorDefecto('a4'));
-
+  // Ajustes: Modo Principal de Ticket y 3 Plantillas (Control Interno, Cliente y Hoja A4)
   $('#swModoTicketCliente')?.addEventListener('change', e => {
     DB.impresion.usarTicketCliente = e.target.checked;
     actualizarBadgeModoTicket();
@@ -5392,6 +5388,10 @@ function init() {
   $('#formImpresoras').addEventListener('submit', guardarConfigImpresoras);
   $('#btnProbarTicket80').addEventListener('click', () => {
     leerFormularioImpresorasEnVivo();
+    if (plantillaEditando === 'a4') {
+      imprimirReporteA4(datosEjemploReporteA4());
+      return;
+    }
     imprimirTicket80mm({
       subtitulo: plantillaEditando === 'cliente' ? 'COMPROBANTE DE VENTA #00083' : 'TICKET DE CONTROL INTERNO #00083',
       checkLabel: 'MESA 1 · SALÓN PRINCIPAL',
@@ -5418,13 +5418,13 @@ function init() {
   $('#btnSupaSubir').addEventListener('click', subirDatosSupabase);
   $('#btnSupaEditar').addEventListener('click', editarCredencialesSupabase);
   $('#btnSupaEliminar').addEventListener('click', eliminarConexionSupabase);
-
-  // Ajustes: 5 Temas Predefinidos, Colores y Licencia
-  $('#gridTemasPredefinidos')?.addEventListener('click', e => {
-    const card = e.target.closest('[data-tema-preset]');
-    if (card) aplicarTemaPredefinido(card.dataset.temaPreset);
+  $('#btnToggleSupaSecret')?.addEventListener('click', () => {
+    const inp = $('#supaSecretKey');
+    if (!inp) return;
+    inp.type = inp.type === 'password' ? 'text' : 'password';
   });
-  $('#btnResetColores').addEventListener('click', restablecerColoresTema);
+
+  // Ajustes: Licencia y Marca
 
   $('#btnDesbloquearLicencia').addEventListener('click', desbloquearLicenciaDobleClave);
   $('#btnExtender30').addEventListener('click', () => extenderLicenciaDias(30));
