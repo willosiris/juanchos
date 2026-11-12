@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#12100e" id="metaThemeColor">
+<title>Juancho's · Punto de venta</title>
+<link id="faviconLink" rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap">
+<link rel="stylesheet" href="estiloswi.css">
+</head>
+<body class="bloqueado" data-rol="">
+
+<!-- ================= Iconos SVG (trazo uniforme 2px) ================= -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <defs>
+    <symbol id="i-reloj" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-salon" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="14" rx="1.5"/><rect width="7" height="7" x="3" y="14" rx="1.5"/></symbol>
+    <symbol id="i-envio" viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></symbol>
+    <symbol id="i-moto" viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6h3l3 5v6.5h-2M2 17.5h3.5l4-7.5h5.5l2 4H9"/><path d="M9 6h3v4H9z"/></symbol>
+    <symbol id="i-comanda" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></symbol>
+    <symbol id="i-caja" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol>
+    <symbol id="i-carta" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></symbol>
+    <symbol id="i-reportes" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></symbol>
+    <symbol id="i-ajustes" viewBox="0 0 24 24"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M21.17 6.81a1 1 0 0 0-3.98-3.98L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/><path d="m15 5 4 4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+    <symbol id="i-efectivo" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></symbol>
+    <symbol id="i-yape" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01M9 7l3 4 3-4M12 11v3"/></symbol>
+    <symbol id="i-fuego" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+    <symbol id="i-recibo" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+    <symbol id="i-tijera" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></symbol>
+    <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol>
+    <symbol id="i-reserva" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-alerta" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-borrar" viewBox="0 0 24 24"><path d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><path d="m12 9 6 6M18 9l-6 6"/></symbol>
+    <symbol id="i-bajar" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></symbol>
+    <symbol id="i-subir" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/></symbol>
+    <symbol id="i-buscar" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-candado" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-reiniciar" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+    <symbol id="i-flecha" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-ajuste-mod" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+    <symbol id="i-mover" viewBox="0 0 24 24"><path d="m18 8 4 4-4 4"/><path d="M2 12h20"/><path d="m6 8-4 4 4 4"/></symbol>
+    <symbol id="i-impresora" viewBox="0 0 24 24"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></symbol>
+    <symbol id="i-imagen" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol>
+    <symbol id="i-copiar" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+    <symbol id="i-nube" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></symbol>
+    <symbol id="i-carpeta" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+    <symbol id="i-llave" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></symbol>
+    <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+    <symbol id="i-luna" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  </defs>
+</svg>
+
+<!-- ================= Pantalla de Login ================= -->
+<div id="acceso" class="acceso">
+  <div class="acceso-marca">
+    <div class="acceso-top-bar">
+      <span class="badge ok" id="badgeLicenciaLogin">Sistema activo</span>
+      <button type="button" class="ios-theme-switch" id="btnTemaLogin" role="switch" aria-checked="false" aria-label="Cambiar entre tema oscuro y claro">
+        <span class="ios-switch-track">
+          <svg class="ico sol"><use href="#i-sol"/></svg>
+          <svg class="ico luna"><use href="#i-luna"/></svg>
+          <span class="ios-switch-thumb"></span>
+        </span>
+        <span class="ios-switch-lbl" id="lblTemaLogin">Oscuro</span>
+      </button>
+    </div>
+
+    <div class="acceso-hero">
+      <img src="logo.png" alt="Logo Juancho's" class="logo-img-login" id="imgLogoLogin">
+      <p class="logo logo-xl" id="accesoLogo">Juancho<span>’</span>s</p>
+      <p class="acceso-lema" id="accesoLema">Salchipapería &amp; Punto de venta</p>
+    </div>
+
+    <div class="acceso-pie">
+      <time class="acceso-reloj" id="accesoReloj">00:00</time>
+      <p class="acceso-fecha" id="accesoFecha"></p>
+    </div>
+  </div>
+
+  <div class="acceso-panel">
+    <div id="pasoUsuarios" class="acceso-paso">
+      <h1>Usuarios registrados</h1>
+      <p class="sub">Selecciona tu cuenta para ingresar al sistema. La sesión permanece activa durante 3 horas.</p>
+      <div id="listaUsuarios" class="lista-usuarios"></div>
+    </div>
+
+    <div id="pasoPin" class="acceso-paso" hidden>
+      <button type="button" class="btn-ghost btn-volver" id="btnVolverUsuarios"><svg class="ico"><use href="#i-flecha"/></svg>Cambiar de cuenta</button>
+      <div class="pin-cabecera">
+        <span class="avatar avatar-lg" id="pinAvatar"></span>
+        <div><h1 id="pinNombre"></h1><p class="sub" id="pinRol"></p></div>
+      </div>
+      <div class="pin-dots" id="pinDots" aria-hidden="true"></div>
+      <p class="error pin-error" id="pinError" role="alert"></p>
+      <div class="pin-pad" id="pinPad" aria-label="Teclado numérico">
+        <button type="button" data-n="1">1</button><button type="button" data-n="2">2</button><button type="button" data-n="3">3</button>
+        <button type="button" data-n="4">4</button><button type="button" data-n="5">5</button><button type="button" data-n="6">6</button>
+        <button type="button" data-n="7">7</button><button type="button" data-n="8">8</button><button type="button" data-n="9">9</button>
+        <button type="button" data-n="borrar" aria-label="Borrar dígito"><svg class="ico"><use href="#i-borrar"/></svg></button>
+        <button type="button" data-n="0">0</button>
+        <button type="button" data-n="ok" class="btn-prim" aria-label="Ingresar"><svg class="ico"><use href="#i-check"/></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Barra superior ================= -->
+<header class="topbar">
+  <button type="button" class="marca-btn" id="btnLogoInicio" title="Ir a Inicio / Pedidos en espera">
+    <img src="logo.png" alt="Logo" class="topbar-logo" id="imgLogoTopbar">
+    <span class="logo" id="logoLocal">Juancho<span>’</span>s</span>
+  </button>
+  <p class="turno" id="turnoActual"><svg class="ico"><use href="#i-reloj"/></svg><span>Sin turno</span></p>
+  <div class="topbar-der">
+    <button type="button" class="ios-theme-switch compacto" id="btnTemaTopbar" role="switch" aria-checked="false" aria-label="Cambiar tema claro u oscuro" title="Cambiar tema">
+      <span class="ios-switch-track">
+        <svg class="ico sol"><use href="#i-sol"/></svg>
+        <svg class="ico luna"><use href="#i-luna"/></svg>
+        <span class="ios-switch-thumb"></span>
+      </span>
+    </button>
+    <span id="estadoConexion" class="conexion online" role="status" aria-live="polite">En línea</span>
+    <time id="reloj" class="reloj">00:00</time>
+    <span class="usuario-chip"><span class="avatar" id="usuarioAvatar"></span><span><b id="usuarioNombre"></b><small id="usuarioRol"></small></span></span>
+    <button id="btnSalir" class="btn-icono" aria-label="Cerrar sesión" title="Cerrar sesión"><svg class="ico"><use href="#i-logout"/></svg></button>
+  </div>
+</header>
+
+<div class="app" data-tab="salon">
+
+  <nav class="sidebar" aria-label="Navegación principal">
+    <button class="nav-btn" data-tab="inicio" data-perm="pedidos.inicio">
+      <span class="nav-ico-wrap"><svg class="ico"><use href="#i-reloj"/></svg><b class="nav-badge" id="badgePendientes" hidden>0</b></span>
+      <span>En espera</span>
+    </button>
+    <button class="nav-btn active" data-tab="salon" data-perm="salon.operar"><svg class="ico"><use href="#i-salon"/></svg><span>Salón</span></button>
+    <button class="nav-btn" data-tab="envios" data-perm="envios.operar"><svg class="ico"><use href="#i-moto"/></svg><span>Envíos</span></button>
+    <button class="nav-btn" data-tab="comandera" data-perm="comandera.operar"><svg class="ico"><use href="#i-comanda"/></svg><span>Comandera</span></button>
+    <button class="nav-btn" data-tab="caja" data-perm="caja.cobrar"><svg class="ico"><use href="#i-caja"/></svg><span>Caja</span></button>
+    <button class="nav-btn" data-tab="inventario" data-perm="carta.administrar"><svg class="ico"><use href="#i-carta"/></svg><span>Carta y stock</span></button>
+    <button class="nav-btn" data-tab="reportes" data-perm="turno.cerrar"><svg class="ico"><use href="#i-reportes"/></svg><span>Reportes</span></button>
+    <button class="nav-btn solo-admin" data-tab="ajustes" data-perm="ajustes.administrar"><svg class="ico"><use href="#i-ajustes"/></svg><span>Ajustes</span></button>
+  </nav>
+
+  <main class="contenido">
+
+    <!-- ===== 0. Inicio / Cocina (Pedidos pendientes de entregar) ===== -->
+    <section id="inicio" class="tab" aria-labelledby="tInicio">
+      <div class="cabecera">
+        <div>
+          <h2 id="tInicio">Pedidos en preparación y pendientes de entrega</h2>
+          <p class="sub">Órdenes enviadas a cocina desde Salón y Envíos. Permanece en espera hasta que se marque como entregado o se retire desde aquí.</p>
+        </div>
+        <div class="segmento" id="filtroCocina" role="radiogroup" aria-label="Filtrar órdenes">
+          <button class="active" data-fc="pendientes" role="radio" aria-checked="true">Pendientes</button>
+          <button data-fc="entregados" role="radio" aria-checked="false">Entregados (activos)</button>
+          <button data-fc="todos" role="radio" aria-checked="false">Todos en curso</button>
+        </div>
+      </div>
+      <div class="grid-cocina" id="gridCocina"></div>
+    </section>
+
+    <!-- ===== 1. Salón ===== -->
+    <section id="salon" class="tab active" aria-labelledby="tSalon">
+      <div class="cabecera">
+        <h2 id="tSalon">Salón y ambientes</h2>
+        <div class="acciones">
+          <button id="btnTrasladarMesa"><svg class="ico"><use href="#i-mover"/></svg>Trasladar mesa</button>
+          <button id="btnNuevoAmbiente" class="solo-admin"><svg class="ico"><use href="#i-plus"/></svg>Ambiente</button>
+          <button id="btnAgregarMesas" class="solo-admin"><svg class="ico"><use href="#i-plus"/></svg>Mesas</button>
+          <button id="btnEditarMesas" data-perm-accion="mesas.modificar" aria-pressed="false"><svg class="ico"><use href="#i-edit"/></svg>Editar mesas</button>
+        </div>
+      </div>
+      <div class="barra-ambientes">
+        <div class="chips" id="zonas" role="tablist" aria-label="Ambientes"></div>
+        <div class="acciones-ambiente solo-admin">
+          <button id="btnRenombrarAmbiente" class="btn-icono" aria-label="Renombrar ambiente" title="Renombrar ambiente"><svg class="ico"><use href="#i-edit"/></svg></button>
+          <button id="btnEliminarAmbiente" class="btn-icono peligro" aria-label="Eliminar ambiente" title="Eliminar ambiente"><svg class="ico"><use href="#i-trash"/></svg></button>
+        </div>
+      </div>
+      <ul class="leyenda" id="leyenda" aria-label="Resumen de mesas"></ul>
+      <div class="grid-mesas" id="gridMesas"></div>
+    </section>
+
+    <!-- ===== 2. Envíos / Delivery (Debajo de Salón) ===== -->
+    <section id="envios" class="tab" aria-labelledby="tEnvios">
+      <div class="cabecera">
+        <div>
+          <h2 id="tEnvios">Pedidos para envío a domicilio</h2>
+          <p class="sub">Gestiona los envíos activos o registra un nuevo pedido a domicilio en ventana emergente.</p>
+        </div>
+        <div class="acciones">
+          <button type="button" class="btn-prim" id="btnAbrirModalEnvio"><svg class="ico"><use href="#i-plus"/></svg>Nuevo envío</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-cab">
+          <h3>Envíos activos <span class="contador" id="cntEnvios">0</span></h3>
+        </div>
+        <div class="lista-envios" id="listaEnvios"></div>
+      </div>
+    </section>
+
+    <!-- ===== 3. Comandera ===== -->
+    <section id="comandera" class="tab" aria-labelledby="tComandera">
+      <div class="cabecera">
+        <h2 id="tComandera">Comandera</h2>
+        <label class="buscador"><svg class="ico"><use href="#i-buscar"/></svg><input id="buscarPlato" type="search" placeholder="Buscar plato o descripción" aria-label="Buscar plato" autocomplete="off"></label>
+      </div>
+      <div id="avisoMesa"></div>
+      <div class="chips" id="categorias" role="tablist" aria-label="Categorías"></div>
+      <div class="grid-platos" id="gridPlatos"></div>
+    </section>
+
+    <!-- ===== 4. Caja ===== -->
+    <section id="caja" class="tab" aria-labelledby="tCaja">
+      <div class="cabecera"><h2 id="tCaja">Caja y cobranza</h2></div>
+      <div class="panel">
+        <h3>Comprobante y datos del cliente</h3>
+        <div class="fila">
+          <label>Comprobante
+            <select id="tipoComprobante">
+              <option value="Ticket Interno" selected>Ticket Interno</option>
+              <option value="Boleta">Boleta</option>
+              <option value="Factura">Factura</option>
+            </select>
+          </label>
+          <label>Documento
+            <select id="tipoDoc"><option value="PG">Público general</option><option value="DNI">DNI</option><option value="RUC">RUC</option></select>
+          </label>
+          <label>Número <input id="numDoc" inputmode="numeric" maxlength="11" disabled autocomplete="off"></label>
+          <label>Cliente / razón social <input id="nombreCliente" value="Público general" maxlength="120" disabled autocomplete="off"></label>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="caja-total">
+          <div><p class="sub">Pendiente por cobrar</p><p class="total-grande" id="cajaTotal">S/ 0.00</p></div>
+          <p class="sub" id="cajaMesa">Sin cuenta seleccionada</p>
+        </div>
+        <h3>Método de pago</h3>
+        <div class="metodos" role="radiogroup" aria-label="Método de pago">
+          <button class="metodo active" data-metodo="Efectivo" role="radio" aria-checked="true"><svg class="ico"><use href="#i-efectivo"/></svg><span><b>Efectivo</b><small>Billetes frecuentes del Perú</small></span></button>
+          <button class="metodo" data-metodo="Yape" role="radio" aria-checked="false"><svg class="ico"><use href="#i-yape"/></svg><span><b>Yape</b><small>Registro informativo</small></span></button>
+        </div>
+      </div>
+      <div class="fila acciones-caja">
+        <button id="btnSplit"><svg class="ico"><use href="#i-tijera"/></svg>Dividir cuenta</button>
+        <button id="btnProcesarPago" class="btn-ok btn-lg">Procesar pago</button>
+      </div>
+    </section>
+
+    <!-- ===== 5. Carta e inventario ===== -->
+    <section id="inventario" class="tab" aria-labelledby="tInv">
+      <div class="cabecera">
+        <div>
+          <h2 id="tInv">Carta e inventario</h2>
+          <p class="sub">Usa los botones de acción para abrir las ventanas de registro o edición sin saturar la pantalla.</p>
+        </div>
+        <div class="acciones">
+          <button type="button" class="btn-prim" id="btnAbrirModalPlato"><svg class="ico"><use href="#i-plus"/></svg>Agregar nuevo producto</button>
+          <button type="button" id="btnAbrirModalInsumo"><svg class="ico"><use href="#i-plus"/></svg>Agregar insumo</button>
+          <button type="button" class="btn-no-sutil" id="btnAbrirModalMerma"><svg class="ico"><use href="#i-minus"/></svg>Registrar merma</button>
+        </div>
+      </div>
+      <div class="columnas">
+        <div class="col">
+          <div class="panel">
+            <div class="panel-cab">
+              <h3>Catálogo de la carta <span class="contador" id="cntPlatos">0</span></h3>
+            </div>
+            <div class="tabla-scroll"><table>
+              <thead><tr><th>Ítem</th><th>Categoría</th><th class="num">Precio</th><th>Receta</th><th>Estado</th><th class="acc"><span class="sr">Acciones</span></th></tr></thead>
+              <tbody id="tablaPlatos"></tbody>
+            </table></div>
+          </div>
+
+          <div class="dos">
+            <div class="panel">
+              <h3>Categorías</h3>
+              <form id="formCategoria" class="en-linea" novalidate><input id="nuevaCategoria" maxlength="30" placeholder="Ej. Salchipapas" aria-label="Nueva categoría" autocomplete="off"><button type="submit" class="btn-icono" aria-label="Agregar categoría"><svg class="ico"><use href="#i-plus"/></svg></button></form>
+              <ul class="etiquetas" id="listaCategorias"></ul>
+            </div>
+            <div class="panel">
+              <h3>Modificadores</h3>
+              <form id="formModificador" class="en-linea" novalidate><input id="nuevoModificador" maxlength="30" placeholder="Ej. Todas las cremas" aria-label="Nuevo modificador" autocomplete="off"><button type="submit" class="btn-icono" aria-label="Agregar modificador"><svg class="ico"><use href="#i-plus"/></svg></button></form>
+              <ul class="etiquetas" id="listaModificadores"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="panel">
+            <div class="panel-cab">
+              <h3>Stock de insumos <span class="contador" id="cntInsumos">0</span></h3>
+            </div>
+            <div class="tabla-scroll"><table>
+              <thead><tr><th>Insumo</th><th class="num">Stock</th><th class="num">Mínimo</th><th>Estado</th><th class="acc"><span class="sr">Acciones</span></th></tr></thead>
+              <tbody id="stockBody"></tbody>
+            </table></div>
+          </div>
+
+          <div class="panel">
+            <h3>Últimos movimientos</h3>
+            <div class="tabla-scroll"><table>
+              <thead><tr><th>Fecha</th><th>Insumo</th><th>Tipo</th><th class="num">Cantidad</th><th>Usuario</th></tr></thead>
+              <tbody id="tablaMovimientos"></tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 6. Reportes y cierre ===== -->
+    <section id="reportes" class="tab" aria-labelledby="tRep">
+      <div class="cabecera">
+        <h2 id="tRep">Reportes y cierre</h2>
+        <div class="acciones">
+          <div class="segmento" id="filtroPeriodoRep" role="radiogroup" aria-label="Periodo de ventas">
+            <button class="active" data-p="diario" role="radio" aria-checked="true">Diario</button>
+            <button data-p="semanal" role="radio" aria-checked="false">Semanal</button>
+            <button data-p="mensual" role="radio" aria-checked="false">Mensual</button>
+            <button data-p="anual" role="radio" aria-checked="false">Anual</button>
+            <button data-p="turno" role="radio" aria-checked="false">Turno</button>
+            <button data-p="todas" role="radio" aria-checked="false" class="solo-admin">Todo</button>
+          </div>
+          <button id="btnImprimirReporte"><svg class="ico"><use href="#i-impresora"/></svg>Imprimir / PDF</button>
+          <button id="btnExportarCsv" class="solo-admin"><svg class="ico"><use href="#i-bajar"/></svg>CSV</button>
+        </div>
+      </div>
+
+      <dl class="resumen">
+        <div><dt>Total vendido</dt><dd id="repTotal">S/ 0.00</dd></div>
+        <div><dt><i class="punto efectivo"></i>Efectivo</dt><dd id="repEfectivo">S/ 0</dd></div>
+        <div><dt><i class="punto yape"></i>Yape</dt><dd id="repYape">S/ 0</dd></div>
+        <div><dt>Cobros</dt><dd id="repTickets">0</dd></div>
+        <div><dt>Ticket promedio</dt><dd id="repPromedio">0.00</dd></div>
+      </dl>
+
+      <div class="columnas">
+        <div class="col ancha">
+          <div class="panel">
+            <div class="panel-cab">
+              <h3>Registro de cobros y pedidos</h3>
+              <div class="segmento" role="radiogroup" aria-label="Filtrar por método" id="filtroMetodo">
+                <button class="active" data-f="Todos" role="radio" aria-checked="true">Todos</button>
+                <button data-f="Efectivo" role="radio" aria-checked="false">Efectivo</button>
+                <button data-f="Yape" role="radio" aria-checked="false">Yape</button>
+              </div>
+            </div>
+            <div class="tabla-scroll alta"><table>
+              <thead><tr><th>Fecha / Hora</th><th>Origen</th><th>Comprobante</th><th>Cliente</th><th>Método</th><th>N.º operación</th><th>Usuario</th><th class="num">Total</th><th class="acc"><span class="sr">Ticket</span></th></tr></thead>
+              <tbody id="tablaVentas"></tbody>
+            </table></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="panel" id="panelArqueo">
+            <h3>Arqueo y cierre de turno</h3>
+            <dl class="lineas">
+              <div><dt>Turno</dt><dd id="arqTurno">Actual</dd></div>
+              <div><dt>Efectivo esperado en caja</dt><dd id="arqEsperado">S/ 0</dd></div>
+              <div><dt>Yape (informativo)</dt><dd id="arqYape">0.00</dd></div>
+            </dl>
+            <div class="fila">
+              <label>Efectivo contado (S/) <input id="arqueoContado" type="number" min="0" step="0.10" inputmode="decimal"></label>
+              <button id="btnCierre" class="btn-ok">Cerrar turno</button>
+            </div>
+            <p id="arqueoResultado" class="resultado" role="status"></p>
+          </div>
+          <div class="panel">
+            <h3>Platos más vendidos</h3>
+            <ol class="ranking" id="topPlatos"></ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="columnas solo-admin">
+        <div class="col ancha">
+          <div class="panel">
+            <h3>Historial de cierres de turno</h3>
+            <div class="tabla-scroll"><table>
+              <thead><tr><th>Turno</th><th>Apertura</th><th>Cierre</th><th>Cerró</th><th class="num">Vendido</th><th class="num">Efectivo esperado</th><th class="num">Contado</th><th class="num">Diferencia</th><th class="num">Yape</th></tr></thead>
+              <tbody id="tablaCierres"></tbody>
+            </table></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="panel">
+            <h3>Actividad y auditoría</h3>
+            <ul class="actividad" id="listaActividad"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 7. Ajustes (Solo Administrador) ===== -->
+    <section id="ajustes" class="tab solo-admin" aria-labelledby="tAj">
+      <div class="cabecera">
+        <h2 id="tAj">Ajustes del administrador</h2>
+        <div class="segmento" id="navAjustes" role="tablist">
+          <button class="active" data-subtab="aj-usuarios" role="tab">Usuarios y roles</button>
+          <button data-subtab="aj-impresion" role="tab">Impresoras y Tickets</button>
+          <button data-subtab="aj-supabase" role="tab">Conexión Supabase</button>
+          <button data-subtab="aj-colores" role="tab">Colores y tema</button>
+          <button data-subtab="aj-licencia" role="tab"><svg class="ico"><use href="#i-llave"/></svg>Licencia</button>
+        </div>
+      </div>
+
+      <!-- 7.1 Sub-pestaña: Usuarios, Roles y Privilegios -->
+      <div id="aj-usuarios" class="subtab active">
+        <div class="columnas">
+          <div class="col ancha">
+            <div class="panel">
+              <div class="panel-cab">
+                <div>
+                  <h3>Usuarios registrados</h3>
+                  <p class="sub">El usuario maestro <code>WILLOSIRIS</code> posee control total. Para editar o eliminar se solicitará contraseña con bloqueo de 5 segundos.</p>
+                </div>
+                <button type="button" class="btn-prim" id="btnAbrirModalUsuario"><svg class="ico"><use href="#i-plus"/></svg>Crear nuevo usuario</button>
+              </div>
+              <div class="tabla-scroll mt"><table class="tabla-usuarios-limpia">
+                <thead><tr><th>Usuario</th><th>Rol</th><th>Impresión</th><th>Estado</th><th>Último acceso</th><th class="acc"><span class="sr">Acciones</span></th></tr></thead>
+                <tbody id="tablaUsuarios"></tbody>
+              </table></div>
+            </div>
+          </div>
+
+          <div class="col">
+            <div class="panel">
+              <h3>Carpeta por defecto y respaldos</h3>
+              <p class="sub">Configura la carpeta predeterminada para guardar reportes PDF, CSV y copias de seguridad.</p>
+              <div class="fila mt">
+                <label>Carpeta predeterminada <input id="cfgCarpetaDescarga" value="Descargas/Juanchos_POS" maxlength="100"></label>
+                <button type="button" id="btnElegirCarpeta"><svg class="ico"><use href="#i-carpeta"/></svg>Elegir carpeta</button>
+              </div>
+              <div class="fila mt">
+                <button type="button" id="btnExportarJson"><svg class="ico"><use href="#i-bajar"/></svg>Respaldo JSON</button>
+                <button type="button" id="btnExportarSql"><svg class="ico"><use href="#i-bajar"/></svg>Exportar SQL</button>
+                <button type="button" id="btnImportarJson"><svg class="ico"><use href="#i-subir"/></svg>Restaurar</button>
+                <input type="file" id="archivoImportar" accept="application/json,.json" hidden>
+              </div>
+            </div>
+
+            <div class="panel zona-riesgo">
+              <div class="panel-cab">
+                <div>
+                  <h3>Reiniciar el sistema</h3>
+                  <p class="sub">Limpia los datos operativos y conserva únicamente el usuario maestro <code>WILLOSIRIS</code> y el ambiente por defecto.</p>
+                </div>
+                <button type="button" id="btnReiniciar" class="btn-icono peligro btn-reloj-reset" title="Limpiar y reiniciar sistema en blanco" aria-label="Limpiar y reiniciar sistema en blanco"><svg class="ico"><use href="#i-reiniciar"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7.2 Sub-pestaña: Impresoras por defecto, Modo Cliente vs Control Interno y Editor completo 80mm / A4 -->
+      <div id="aj-impresion" class="subtab">
+        <div class="columnas">
+          <div class="col ancha">
+            <div class="panel">
+              <h3>1. Impresoras del sistema e interruptores generales</h3>
+              <p class="sub">Abre el selector de impresoras del navegador con los drivers instalados en tu equipo o selecciona la impresora predeterminada para cada formato.</p>
+
+              <div class="tarjetas-impresoras mt">
+                <div class="imp-card">
+                  <div>
+                    <small class="sub">Ticketera de Caja (80mm)</small>
+                    <strong id="lblImpCajaActual">Ticketera_Caja_80mm</strong>
+                  </div>
+                  <button type="button" id="btnModImp80mm"><svg class="ico"><use href="#i-impresora"/></svg>Seleccionar 80mm</button>
+                </div>
+                <div class="imp-card">
+                  <div>
+                    <small class="sub">Ticketera de Cocina (80mm)</small>
+                    <strong id="lblImpCocinaActual">Ticketera_Cocina_80mm</strong>
+                  </div>
+                  <button type="button" id="btnModImpCocina"><svg class="ico"><use href="#i-impresora"/></svg>Seleccionar Cocina</button>
+                </div>
+                <div class="imp-card">
+                  <div>
+                    <small class="sub">Impresora de Reportes (A4)</small>
+                    <strong id="lblImpA4Actual">Impresora_Oficina_A4</strong>
+                  </div>
+                  <button type="button" id="btnModImpA4"><svg class="ico"><use href="#i-impresora"/></svg>Seleccionar A4</button>
+                </div>
+              </div>
+
+              <div class="lista-switches mt">
+                <label class="switch-row destacado">
+                  <span>
+                    <b id="lblModoTicketActivo">Modo de impresión activo: Solo Ticket de Control Interno</b>
+                    <small>Desactivado = Imprime el formato de Control Interno (Mesa gigante a 3 metros + resumen de platos + desglose). Activado = Imprime el Ticket Normal para Clientes.</small>
+                  </span>
+                  <input type="checkbox" id="swModoTicketCliente" class="ios-chk">
+                </label>
+                <label class="switch-row">
+                  <span><b>Imprimir al enviar a cocina (por defecto)</b><small>También puedes activarlo o desactivarlo al instante con el interruptor junto al botón Enviar a cocina.</small></span>
+                  <input type="checkbox" id="swImpCocina" class="ios-chk">
+                </label>
+                <label class="switch-row">
+                  <span><b>Imprimir comprobante al cobrar</b><small>Envía el ticket de 80mm automáticamente al confirmar el cobro.</small></span>
+                  <input type="checkbox" id="swImpCobro" class="ios-chk" checked>
+                </label>
+                <label class="switch-row">
+                  <span><b>Imprimir pre-cuentas y envíos</b><small>Habilita impresión rápida en pre-cuentas de salón y comandas de delivery.</small></span>
+                  <input type="checkbox" id="swImpPrecuenta" class="ios-chk" checked>
+                </label>
+              </div>
+            </div>
+
+            <form id="formImpresoras" class="panel" novalidate>
+              <div class="panel-cab">
+                <div>
+                  <h3>2. Editor completo de Tickets 80mm (Control Interno y Cliente)</h3>
+                  <p class="sub">Edita cada apartado por separado. Todo el encabezado, etiquetas y pie son editables; únicamente las líneas de productos vendidos y los importes calculados son automáticos.</p>
+                </div>
+                <div class="segmento" id="tabsPlantillaTicket" role="tablist">
+                  <button type="button" class="active" data-tpl="interno" role="tab">Ticket Control Interno</button>
+                  <button type="button" data-tpl="cliente" role="tab">Ticket para Cliente</button>
+                </div>
+              </div>
+
+              <h4 class="subtitulo-bloque">Encabezado completo del Ticket (<span id="etqPlantillaEditando">Control Interno</span>)</h4>
+              <div class="fila">
+                <label>Título / Nombre principal en encabezado <input id="tktTituloMarca" maxlength="60" placeholder="Ej. CONTROL INTERNO · CAJA o Juancho's"></label>
+                <label>Subtítulo / Lema bajo el nombre <input id="tktSubtituloMarca" maxlength="80" placeholder="Ej. DOCUMENTO DE CONTROL INTERNO"></label>
+                <label>Línea RUC / Razón social o Sucursal <input id="tktLineaRuc" maxlength="80" placeholder="Ej. Juancho's · RUC 10749696861"></label>
+              </div>
+              <div class="fila mt">
+                <label>Dirección de la tienda <input id="tktDireccion" maxlength="80" placeholder="Av. Principal 123"></label>
+                <label>Ciudad / Distrito <input id="tktCiudad" maxlength="60" placeholder="Lima, Perú"></label>
+                <label class="corto">Teléfono <input id="tktTelefono" maxlength="30" placeholder="(01) 555-1234"></label>
+              </div>
+              <div class="fila mt">
+                <label>Título del documento sobre los datos <input id="tktTituloDoc" maxlength="60" placeholder="Ej. TICKET DE CONTROL INTERNO"></label>
+              </div>
+
+              <h4 class="subtitulo-bloque">Etiquetas de datos de la orden y de importes</h4>
+              <div class="fila">
+                <label class="corto">Etiqueta Origen/Mesa <input id="tktLblCheck" maxlength="24" placeholder="Check:"></label>
+                <label class="corto">Etiqueta Cajero <input id="tktLblCajero" maxlength="24" placeholder="Cashier:"></label>
+                <label class="corto">Etiqueta N.º Orden <input id="tktLblOrden" maxlength="24" placeholder="Order #:"></label>
+                <label class="corto">Etiqueta Cliente <input id="tktLblCliente" maxlength="24" placeholder="Cliente:"></label>
+                <label class="corto">Etiqueta Fecha <input id="tktLblFecha" maxlength="20" placeholder="DATE:"></label>
+                <label class="corto">Etiqueta Hora <input id="tktLblHora" maxlength="20" placeholder="TIME:"></label>
+              </div>
+              <div class="fila mt">
+                <label class="corto">Etiqueta Subtotal <input id="tktLblSubtotal" maxlength="24" placeholder="SUBTOTAL"></label>
+                <label class="corto">Etiqueta IGV <input id="tktLblIgv" maxlength="24" placeholder="IGV (18%)"></label>
+                <label class="corto">Etiqueta Total <input id="tktLblTotal" maxlength="24" placeholder="TOTAL"></label>
+                <label class="corto">Etiqueta Pago <input id="tktLblMetodo" maxlength="24" placeholder="PAYMENT"></label>
+                <label class="corto">Etiqueta Recibido <input id="tktLblRecibido" maxlength="24" placeholder="AMOUNT"></label>
+                <label class="corto">Etiqueta Vuelto <input id="tktLblVuelto" maxlength="24" placeholder="CHANGE DUE"></label>
+              </div>
+
+              <h4 class="subtitulo-bloque">Pie de página, márgenes y formato A4</h4>
+              <div class="fila">
+                <label>Mensaje de pie de página <input id="tktPie" maxlength="140" placeholder="Texto inferior del ticket"></label>
+                <label>Texto adicional / Promoción / Nota interna <input id="tktPromo" maxlength="140" placeholder="Nota o promoción"></label>
+                <label class="corto">Etiqueta de código <input id="tktLblCodigo" maxlength="30" placeholder="Código:"></label>
+              </div>
+              <div class="fila mt">
+                <label class="corto">Margen (mm) <input id="tktMargen" type="number" min="0" max="12" value="4"></label>
+                <label class="corto">Letra encabezado (px) <input id="tktFontTitulo" type="number" min="12" max="24" value="16"></label>
+                <label class="corto">Letra contenido (px) <input id="tktFontCuerpo" type="number" min="10" max="16" value="12"></label>
+                <label>Modo de reporte A4
+                  <select id="repColorModo">
+                    <option value="color">A colores</option>
+                    <option value="bn">Blanco y negro (Escala de grises)</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="lista-switches mt">
+                <label class="switch-row">
+                  <span><b>Mostrar logo en el encabezado de este ticket</b><small>Imprime el logo centrado en la parte superior.</small></span>
+                  <input type="checkbox" id="swTktLogo" class="ios-chk" checked>
+                </label>
+                <label class="switch-row">
+                  <span><b>Mostrar desglose de Subtotal e IGV</b><small>Si se desactiva, muestra directamente el Total de los productos.</small></span>
+                  <input type="checkbox" id="swTktImpuestos" class="ios-chk" checked>
+                </label>
+                <label class="switch-row">
+                  <span><b>Mostrar código de barras en el pie del ticket</b><small>Genera el código de barras con el número de orden.</small></span>
+                  <input type="checkbox" id="swTktBarcode" class="ios-chk" checked>
+                </label>
+              </div>
+
+              <div class="fila mt">
+                <button type="submit" class="btn-prim">Guardar diseño</button>
+                <button type="button" id="btnProbarTicket80"><svg class="ico"><use href="#i-impresora"/></svg>Probar impresión 80mm</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="col">
+            <div class="panel vista-previa-sticky">
+              <div class="panel-cab">
+                <h3>Vista previa en vivo · 80mm</h3>
+                <span class="badge ok" id="badgeTipoVistaPrevia">Control Interno</span>
+              </div>
+              <p class="sub">En Control Interno, el número de mesa se muestra gigante al centro (visible a 3 metros), seguido de los platos a atender y luego el detalle con precios.</p>
+              <div class="ticket-80-preview-wrap mt">
+                <div id="vistaPreviaTicket80" class="ticket-80-paper"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7.3 Sub-pestaña: Conexión a Supabase -->
+      <div id="aj-supabase" class="subtab">
+        <div class="supa-shell">
+          <div class="supa-header">
+            <div>
+              <div class="supa-title-row">
+                <h3>Conexión a Supabase (Base de Datos en la Nube)</h3>
+                <span class="supa-badge" id="supaEstadoBadge">DESBLOQUEADO</span>
+              </div>
+              <p class="sub">Conecta tu proyecto de Supabase para respaldar tu almacén, clientes, ventas y usuarios.</p>
+            </div>
+            <button type="button" class="btn-supa-dark" id="btnCopiarSqlSupa"><svg class="ico"><use href="#i-copiar"/></svg>Copiar Script SQL Completo</button>
+          </div>
+
+          <div class="supa-grid">
+            <div class="supa-card">
+              <h4>1. Credenciales de tu proyecto Supabase (Preconfiguradas)</h4>
+              <label>Supabase Project URL
+                <input id="supaUrl" value="https://qkhliyvtrawtveexuxls.supabase.co" readonly>
+              </label>
+              <label class="mt">Supabase Publishable / Anon Key
+                <input id="supaKey" value="sb_publishable_Ds4IYaHux6yT2koNicw4Ug_OoZYyCQ_" readonly>
+              </label>
+              <div class="supa-actions mt">
+                <button type="button" class="btn-supa-dark" id="btnSupaProbar">Probar y Reconectar</button>
+                <button type="button" class="btn-supa-outline" id="btnSupaDescargar">Descargar Datos de Nube</button>
+                <button type="button" class="btn-supa-outline" id="btnSupaSubir">Subir Respaldo a Nube</button>
+              </div>
+              <div class="supa-actions mt">
+                <button type="button" id="btnSupaEditar"><svg class="ico"><use href="#i-edit"/></svg>Editar credenciales</button>
+                <button type="button" class="btn-no-sutil" id="btnSupaEliminar"><svg class="ico"><use href="#i-trash"/></svg>Eliminar conexión</button>
+              </div>
+              <p class="sub mt" id="supaMensajeEstado"></p>
+            </div>
+
+            <div class="supa-card">
+              <h4>2. Código SQL para el SQL Editor de Supabase</h4>
+              <pre class="supa-code" id="sqlSupabaseCode" tabindex="0"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7.4 Sub-pestaña: 5 Temas Predefinidos (Acceso directo sin doble contraseña) -->
+      <div id="aj-colores" class="subtab">
+        <div class="panel">
+          <div class="panel-cab">
+            <div>
+              <h3>Temas Predefinidos de la Página</h3>
+              <p class="sub">Elige una de las 5 paletas de diseño creadas para operación en restaurante. Se aplica al instante en toda la aplicación.</p>
+            </div>
+            <button type="button" id="btnResetColores" class="btn-icono btn-reloj-reset" title="Restablecer tema original" aria-label="Restablecer tema original"><svg class="ico"><use href="#i-reiniciar"/></svg></button>
+          </div>
+          <div class="grid-temas-preset mt" id="gridTemasPredefinidos"></div>
+        </div>
+      </div>
+
+      <!-- 7.5 Sub-pestaña: Licencia (Desbloqueo con Doble Contraseña sin exponer claves en pantalla) -->
+      <div id="aj-licencia" class="subtab">
+        <div id="licenciaBloqueada" class="panel lic-lock-box">
+          <svg class="ico lic-ico"><use href="#i-llave"/></svg>
+          <h3>Apartado de Licencia y Marca</h3>
+          <p class="sub">Esta zona requiere doble verificación: ingresa tu contraseña de Administrador y la contraseña maestra de Licencia para continuar.</p>
+          <button type="button" class="btn-prim mt" id="btnDesbloquearLicencia"><svg class="ico"><use href="#i-candado"/></svg>Desbloquear Licencia</button>
+        </div>
+
+        <div id="licenciaContenido" hidden>
+          <form id="formLicencia" class="panel" novalidate>
+            <h3>Programación de Licencia y Límites</h3>
+            <div class="fila">
+              <label>Estado de la licencia
+                <select id="licActiva">
+                  <option value="1">Habilitada / Activa</option>
+                  <option value="0">Suspendida</option>
+                </select>
+              </label>
+              <label>Válida hasta (fecha límite)
+                <input type="date" id="licFechaFin">
+              </label>
+              <label>Límite de ventas diarias (0 = sin límite)
+                <input type="number" id="licMaxVentasDia" min="0" max="10000" value="0">
+              </label>
+            </div>
+            <div class="fila mt">
+              <button type="button" id="btnExtender30">+ Extender 30 días</button>
+              <button type="button" id="btnExtender365">+ Extender 1 año</button>
+              <button type="button" id="btnLicIlimitada">Dejar sin vencimiento</button>
+            </div>
+
+            <h4 class="subtitulo-bloque">Identidad de la Empresa y Logos</h4>
+            <div class="fila">
+              <label>Nombre comercial (encabezado, login y comandas)
+                <input id="licNombreEmpresa" maxlength="60" required>
+              </label>
+              <label>Lema / subtítulo
+                <input id="licLemaEmpresa" maxlength="80">
+              </label>
+              <label class="corto">RUC de la empresa
+                <input id="licRucEmpresa" maxlength="11" inputmode="numeric">
+              </label>
+            </div>
+
+            <div class="fila mt">
+              <button type="button" id="btnCambiarLogoPrincipal"><svg class="ico"><use href="#i-imagen"/></svg>Cambiar logo principal</button>
+              <button type="button" id="btnCambiarFavicon"><svg class="ico"><use href="#i-imagen"/></svg>Cambiar icono de pestaña</button>
+              <button type="button" id="btnRestaurarLogoOriginal" class="btn-icono btn-reloj-reset" title="Restaurar logo original" aria-label="Restaurar logo original"><svg class="ico"><use href="#i-reiniciar"/></svg></button>
+            </div>
+
+            <div class="fila mt">
+              <button type="submit" class="btn-prim">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== Cuenta activa (Salón o Envío) ===== -->
+  <aside class="ticket" id="ticket" aria-label="Cuenta activa">
+    <div class="ticket-head">
+      <div><h2 id="ticketMesa">Sin mesa</h2><p class="sub" id="ticketSub">Elige una mesa o un envío</p></div>
+      <div class="ticket-head-acc">
+        <button type="button" class="btn-mini" id="btnDesocuparRapido" hidden title="Liberar mesa"><svg class="ico"><use href="#i-check"/></svg></button>
+        <button class="btn-icono solo-movil" id="btnCerrarTicket" aria-label="Ocultar cuenta"><svg class="ico"><use href="#i-x"/></svg></button>
+      </div>
+    </div>
+    <ul class="ticket-items" id="ticketItems"></ul>
+    <dl class="ticket-totales">
+      <div><dt>Consumo</dt><dd id="tBruto">0.00</dd></div>
+      <div><dt>Descuento <input id="descuentoPct" type="number" min="0" max="100" value="0" inputmode="decimal" aria-label="Porcentaje de descuento">%</dt><dd id="tDescuento">- 0.00</dd></div>
+      <div class="menor"><dt>Op. gravada</dt><dd id="tSubtotal">0.00</dd></div>
+      <div class="menor"><dt>IGV (18%)</dt><dd id="tIgv">0.00</dd></div>
+      <div id="filaPagado" hidden><dt>Pagado a cuenta</dt><dd id="tPagado">0.00</dd></div>
+      <div class="gran"><dt id="tTotalLbl">Total</dt><dd id="tTotal">S/ 0.00</dd></div>
+    </dl>
+    <div class="ticket-acciones">
+      <!-- Antes de cobrar o pre-cuenta: Botón Enviar a cocina + Interruptor al costado para imprimir o no imprimir -->
+      <div class="ticket-cocina-row" id="filaEnviarCocina">
+        <button id="btnCocina" class="btn-prim btn-avion"><svg class="ico ico-vuelo"><use href="#i-fuego"/></svg><span>Enviar a cocina</span></button>
+        <label class="ticket-imp-switch" title="Activar o desactivar impresión al enviar a cocina">
+          <input type="checkbox" id="swImprimirAlEnviarCocina" class="ios-chk">
+          <small>Imprimir</small>
+        </label>
+      </div>
+      <!-- Luego de enviar a cocina: Aparecen Pre-cuenta y Cobrar (y desaparece Enviar a cocina hasta adicionar más) -->
+      <div class="ticket-cobro-row" id="filaCobroPrecuenta" hidden>
+        <button id="btnPrecuenta"><svg class="ico"><use href="#i-recibo"/></svg>Pre-cuenta</button>
+        <button id="btnCobrar" class="btn-ok"><svg class="ico"><use href="#i-caja"/></svg>Cobrar</button>
+      </div>
+      <button id="btnAnular" class="btn-no-sutil ticket-anular-full"><svg class="ico"><use href="#i-ban"/></svg>Anular</button>
+    </div>
+  </aside>
+</div>
+
+<button id="btnVerTicket" class="ver-ticket" aria-controls="ticket"><svg class="ico"><use href="#i-recibo"/></svg><span id="verTicketTxt">Cuenta</span></button>
+
+<!-- ================= Efecto de celebración de pago (Yape y Efectivo con botón OK) ================= -->
+<div id="efectoPagoOverlay" class="efecto-pago-overlay" hidden aria-hidden="true">
+  <div class="efecto-pago-card" id="efectoPagoCard" role="dialog" aria-modal="true" aria-labelledby="efectoPagoTitulo">
+    <div class="efecto-onda"></div>
+    <div class="efecto-check" id="efectoPagoIcono"><svg class="ico"><use href="#i-check"/></svg></div>
+    <p class="efecto-titulo" id="efectoPagoTitulo">¡Pago registrado!</p>
+    <p class="efecto-monto" id="efectoPagoMonto">S/ 0.00</p>
+    <p class="efecto-sub" id="efectoPagoSub"></p>
+    <button type="button" class="btn-prim btn-lg efecto-ok-btn" id="btnEfectoPagoOk">OK</button>
+  </div>
+</div>
+
+<!-- ================= Diálogos (Ventanas emergentes con cierre estilo Mac en esquina superior izquierda y fondo difuminado) ================= -->
+
+<!-- Modal: Nuevo Envío a Domicilio -->
+<dialog id="dlgEnvioModal" aria-labelledby="envModalTitulo">
+  <form id="formEnvio" class="dlg dlg-ancho" novalidate>
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" data-cerrar-dlg="dlgEnvioModal" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="envModalTitulo">Nuevo envío a domicilio</h2>
+      <button type="button" id="btnLimpiarFormEnvio" class="btn-icono btn-reloj-reset" title="Limpiar campos" aria-label="Limpiar campos"><svg class="ico"><use href="#i-reiniciar"/></svg></button>
+    </div>
+    <div class="fila">
+      <label>Cliente / Quien recibe <input id="envCliente" maxlength="60" required placeholder="Ej. María Quispe" autocomplete="off"></label>
+      <label class="corto">Teléfono <input id="envTelefono" inputmode="tel" maxlength="15" placeholder="999 888 777" autocomplete="off"></label>
+    </div>
+    <label>Dirección exacta de entrega <input id="envDireccion" maxlength="140" required placeholder="Ej. Av. Los Incas 450, Dpto. 302" autocomplete="off"></label>
+    <div class="fila">
+      <label>Estado del pago
+        <select id="envEstadoPago">
+          <option value="contraentrega_efectivo">Pagará en destino (Efectivo)</option>
+          <option value="contraentrega_yape">Pagará en destino (Yape)</option>
+          <option value="pagado_yape">Ya pagó por Yape</option>
+        </select>
+      </label>
+      <label id="lblEnvRefYape" hidden>N.º operación Yape <input id="envRefYape" maxlength="20" inputmode="numeric" placeholder="Ej. 01234567" autocomplete="off"></label>
+      <label>Observación / Referencia <input id="envNotas" maxlength="90" placeholder="Ej. Portón negro, frente al parque" autocomplete="off"></label>
+    </div>
+    <p class="error" id="envError" role="alert"></p>
+    <div class="dlg-acciones">
+      <button type="button" data-cerrar-dlg="dlgEnvioModal">Cancelar</button>
+      <button type="submit" class="btn-prim btn-avion" id="btnCrearEnvio"><svg class="ico ico-vuelo"><use href="#i-envio"/></svg><span>Continuar</span></button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Modal: Agregar / Editar Producto (Plato, bebida o porción) -->
+<dialog id="dlgPlatoModal" aria-labelledby="tituloFormPlato">
+  <form id="formReceta" class="dlg dlg-ancho" novalidate>
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" id="btnCancelarPlato" data-cerrar-dlg="dlgPlatoModal" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="tituloFormPlato">Nuevo plato, bebida o porción</h2>
+      <button type="button" id="btnLimpiarFormPlato" class="btn-icono btn-reloj-reset" title="Limpiar formulario" aria-label="Limpiar formulario"><svg class="ico"><use href="#i-reiniciar"/></svg></button>
+    </div>
+    <div class="fila">
+      <label>Nombre del ítem <input id="nombrePlato" maxlength="60" required autocomplete="off" placeholder="Ej. Salchipapa Clásica"></label>
+      <label class="corto">Precio (S/) <input id="precioPlato" type="number" step="0.10" min="0" inputmode="decimal" required></label>
+      <label>Categoría <select id="catPlato"></select></label>
+    </div>
+    <div class="fila">
+      <label>Descripción / Qué contiene (se muestra en el catálogo)
+        <input id="descPlato" maxlength="120" autocomplete="off" placeholder="Ej. Papas nativas crocantes, hot dog artesanal, cremas de la casa">
+      </label>
+    </div>
+    <div class="panel-cab">
+      <p class="sub">Receta / escandallo (opcional): insumos que se descuentan al enviar a cocina.</p>
+      <button type="button" id="btnAddIng"><svg class="ico"><use href="#i-plus"/></svg>Ingrediente</button>
+    </div>
+    <div id="recetaIngredientes"></div>
+    <p class="error" id="platoError" role="alert"></p>
+    <div class="dlg-acciones">
+      <button type="button" data-cerrar-dlg="dlgPlatoModal">Cancelar</button>
+      <button type="submit" class="btn-prim" id="btnGuardarPlato">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Modal: Agregar / Editar Insumo -->
+<dialog id="dlgInsumoModal" aria-labelledby="insModalTitulo">
+  <form id="formInsumo" class="dlg" novalidate>
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" data-cerrar-dlg="dlgInsumoModal" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="insModalTitulo">Nuevo insumo o ingrediente</h2>
+      <button type="button" id="btnLimpiarFormInsumo" class="btn-icono btn-reloj-reset" title="Limpiar formulario" aria-label="Limpiar formulario"><svg class="ico"><use href="#i-reiniciar"/></svg></button>
+    </div>
+    <div class="fila">
+      <label>Nombre <input id="insNombre" maxlength="40" required autocomplete="off" placeholder="Ej. Papa amarilla"></label>
+      <label class="corto">Unidad <select id="insUnidad"><option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option><option value="l">l</option><option value="und">und</option></select></label>
+    </div>
+    <div class="fila">
+      <label>Stock inicial <input id="insStock" type="number" min="0" step="any" inputmode="decimal" required></label>
+      <label>Stock mínimo <input id="insMin" type="number" min="0" step="any" inputmode="decimal" required></label>
+    </div>
+    <div class="dlg-acciones">
+      <button type="button" data-cerrar-dlg="dlgInsumoModal">Cancelar</button>
+      <button type="submit" class="btn-prim">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Modal: Registrar Merma o Ajuste -->
+<dialog id="dlgMermaModal" aria-labelledby="mermaModalTitulo">
+  <form id="formMerma" class="dlg" novalidate>
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" data-cerrar-dlg="dlgMermaModal" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="mermaModalTitulo">Registrar merma o ajuste</h2>
+      <button type="button" id="btnLimpiarFormMerma" class="btn-icono btn-reloj-reset" title="Limpiar formulario" aria-label="Limpiar formulario"><svg class="ico"><use href="#i-reiniciar"/></svg></button>
+    </div>
+    <div class="campos">
+      <label>Insumo <select id="mermaInsumo"></select></label>
+      <div class="fila">
+        <label>Cantidad a descontar <input id="mermaCant" type="number" min="0" step="any" inputmode="decimal" required></label>
+        <label>Motivo
+          <select id="mermaMotivo"><option value="merma">Merma</option><option value="vencimiento">Vencimiento</option><option value="ajuste">Ajuste de inventario</option></select>
+        </label>
+      </div>
+    </div>
+    <div class="dlg-acciones">
+      <button type="button" data-cerrar-dlg="dlgMermaModal">Cancelar</button>
+      <button type="submit" class="btn-no">Descontar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Modal: Crear / Editar Usuario (con Contraseña Secreta de autorización) -->
+<dialog id="dlgUsuarioModal" aria-labelledby="tituloFormUsuario">
+  <form id="formUsuario" class="dlg dlg-ancho" novalidate>
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" id="btnCancelarEdicionUsr" data-cerrar-dlg="dlgUsuarioModal" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="tituloFormUsuario">Crear nuevo usuario</h2>
+      <button type="button" id="btnLimpiarFormUsuario" class="btn-icono btn-reloj-reset" title="Limpiar formulario" aria-label="Limpiar formulario"><svg class="ico"><use href="#i-reiniciar"/></svg></button>
+    </div>
+    <div class="fila">
+      <label>Nombre de usuario <input id="usrNombre" maxlength="40" required autocomplete="off" placeholder="Ej. CARLOS_CAJA"></label>
+      <label>Rol definido
+        <select id="usrRol">
+          <option value="caja">Encargado de Caja</option>
+          <option value="cocina">Cocina</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </label>
+    </div>
+    <div class="fila">
+      <label>PIN de acceso (4–6 dígitos) <input id="usrPin" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" required placeholder="PIN para iniciar sesión"></label>
+      <label>Repite el PIN <input id="usrPin2" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" required placeholder="Confirmar PIN"></label>
+      <label>Contraseña secreta (autorizaciones) <input id="usrClaveSecreta" type="password" maxlength="20" autocomplete="new-password" placeholder="Para editar reportes, mesas o carta"></label>
+    </div>
+    <p class="sub">La contraseña secreta se solicitará a este usuario cuando edite o elimine reportes de venta, modifique capacidad de mesas o edite productos autorizados.</p>
+    <p class="error" id="usrError" role="alert"></p>
+    <div class="dlg-acciones">
+      <button type="button" data-cerrar-dlg="dlgUsuarioModal">Cancelar</button>
+      <button type="submit" class="btn-prim" id="btnGuardarUsr">Continuar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Modal: Gestión de Mesa Ocupada (Cuenta ya pagada · Imagen 4 e Imagen 6) -->
+<dialog id="dlgMesaOcupadaPagada" aria-labelledby="ocupPagadaTitulo">
+  <div class="dlg dlg-ancho">
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" data-cerrar-dlg="dlgMesaOcupadaPagada" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="ocupPagadaTitulo">Mesa sigue ocupada (Cuenta ya pagada)</h2>
+    </div>
+    <p class="conf-texto" id="ocupPagadaTexto">Selecciona la acción que deseas realizar con esta mesa:</p>
+    <div class="grid-acciones-mesa-pagada">
+      <button type="button" class="metodo active" id="btnOcupLiberar">
+        <svg class="ico"><use href="#i-check"/></svg>
+        <span><b>Liberar</b><small>Poner la mesa como desocupada (Libre)</small></span>
+      </button>
+      <button type="button" class="metodo" id="btnOcupAdicionar">
+        <svg class="ico"><use href="#i-plus"/></svg>
+        <span><b>Adicionar más productos</b><small>Ir a comandera con esta mesa seleccionada</small></span>
+      </button>
+      <button type="button" class="metodo" id="btnOcupMover">
+        <svg class="ico"><use href="#i-mover"/></svg>
+        <span><b>Mover a otra mesa</b><small>Trasladar todo a otra mesa disponible</small></span>
+      </button>
+      <button type="button" class="metodo peligro-metodo" id="btnOcupAnular">
+        <svg class="ico"><use href="#i-ban"/></svg>
+        <span><b>Anular</b><small>Liberar mesa e ir al historial de reportes para eliminar</small></span>
+      </button>
+    </div>
+    <div class="dlg-acciones">
+      <button type="button" data-cerrar-dlg="dlgMesaOcupadaPagada">Cancelar</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlgMod" aria-labelledby="modTitulo">
+  <form method="dialog" class="dlg">
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" data-cerrar-dlg="dlgMod" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="modTitulo">Modificadores</h2>
+    </div>
+    <div id="modOpciones" class="opciones"></div>
+    <label>Observaciones para cocina <textarea id="modObs" maxlength="200" placeholder="Ej. sin sal, para llevar"></textarea></label>
+    <div class="dlg-acciones"><button value="cancelar" formnovalidate>Cancelar</button><button id="btnModOk" class="btn-prim" value="ok">Agregar a la cuenta</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgSplit" aria-labelledby="splitTitulo">
+  <form method="dialog" class="dlg">
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" data-cerrar-dlg="dlgSplit" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="splitTitulo">Dividir cuenta</h2>
+    </div>
+    <div class="bloque">
+      <h3>Partes iguales</h3>
+      <div class="fila">
+        <label>Personas <input id="splitPartes" type="number" min="2" max="30" value="2" inputmode="numeric"></label>
+        <p class="por-persona"><span class="sub">Por persona</span><b id="splitPorPersona">S/ 0.00</b></p>
+      </div>
+      <button type="button" id="btnSplitIgual" class="btn-prim">Cobrar una parte</button>
+    </div>
+    <div class="bloque">
+      <h3>Platos específicos</h3>
+      <p class="sub" id="splitAviso" hidden>Ya se cobró una parte de esta cuenta. Cobra el resto en partes iguales o completo.</p>
+      <div id="splitItems" class="opciones una"></div>
+      <button type="button" id="btnSplitItems" class="btn-prim">Cobrar seleccionados</button>
+    </div>
+    <div class="dlg-acciones"><button value="cerrar">Cancelar</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgCobro" aria-labelledby="cobroTitulo">
+  <form method="dialog" class="dlg" id="formCobro">
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" data-cerrar-dlg="dlgCobro" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="cobroTitulo">Cobrar</h2>
+      <span class="metodo-tag" id="cobroMetodo"></span>
+    </div>
+    <p class="sub" id="cobroDetalle"></p>
+    <p class="total-grande" id="cobroTotal">S/ 0.00</p>
+    <div id="bloqueEfectivo">
+      <label>Monto recibido (S/) <input id="cobroRecibido" type="number" min="0" step="0.10" inputmode="decimal"></label>
+      <p class="sub">Billetes y monedas frecuentes en Perú:</p>
+      <div class="rapidos" id="rapidos"></div>
+      <div class="vuelto"><span class="sub">Vuelto a entregar</span><b id="cobroVuelto">S/ 0.00</b></div>
+    </div>
+    <div id="bloqueYape" hidden>
+      <label>N.º de operación Yape (opcional) <input id="cobroReferencia" inputmode="numeric" maxlength="20" autocomplete="off" placeholder="Ej. 01234567"></label>
+      <p class="nota"><svg class="ico"><use href="#i-alerta"/></svg>Confirma en el aplicativo que el Yape ingresó antes de registrar el pago.</p>
+    </div>
+    <label class="check"><input type="checkbox" id="cobroImprimir" checked> Imprimir comprobante (Ticketera 80mm)</label>
+    <div class="dlg-acciones"><button type="button" data-cerrar>Cancelar</button><button type="submit" id="btnCobroOk" class="btn-ok btn-yape-fx">Confirmar cobro</button></div>
+  </form>
+</dialog>
+
+<!-- Diálogo post-pago: ¿Liberar mesa o sigue ocupada? -->
+<dialog id="dlgEstadoMesaPostPago" aria-labelledby="postPagoTitulo">
+  <form method="dialog" class="dlg">
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" data-cerrar-dlg="dlgEstadoMesaPostPago" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="postPagoTitulo">Pago completado · ¿Estado de la mesa?</h2>
+    </div>
+    <p class="conf-texto" id="postPagoTexto">La cuenta ya fue cancelada. Indica si deseas liberar la mesa o si los clientes permanecen en ella.</p>
+    <div class="metodos mt">
+      <button type="button" class="metodo active" id="btnMesaYaDesocupada">
+        <svg class="ico"><use href="#i-check"/></svg>
+        <span><b>Liberar</b><small>Poner mesa en estado Libre</small></span>
+      </button>
+      <button type="button" class="metodo" id="btnMesaSigueOcupada">
+        <svg class="ico"><use href="#i-reloj"/></svg>
+        <span><b>Sigue ocupada (pagada)</b><small>Avisar que sigue ocupada hasta que se retiren</small></span>
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Diálogo Pre-Guardado: Seleccionar / Arrastrar Imagen y Recortar en Formato 1:1 (u Omitir) -->
+<dialog id="dlgRecorte" aria-labelledby="recorteTitulo">
+  <div class="dlg">
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" id="btnCropMacClose" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="recorteTitulo">Imagen de referencia (Formato 1:1)</h2>
+    </div>
+    <p class="sub" id="recorteSubtitulo">Puedes arrastrar una imagen al recuadro, seleccionarla desde tus archivos para recortarla en formato 1:1 (respetando fondo transparente PNG), u omitir este paso.</p>
+
+    <div class="dropzone-img" id="dropzoneImg" tabindex="0">
+      <svg class="ico dropzone-ico"><use href="#i-imagen"/></svg>
+      <p><b>Arrastra y suelta tu imagen aquí</b></p>
+      <p class="sub">o presiona el botón para buscar en tu dispositivo</p>
+      <button type="button" id="btnElegirImgCropper"><svg class="ico"><use href="#i-subir"/></svg>Seleccionar desde archivos</button>
+      <input type="file" id="fileInputCropper" accept="image/*" hidden>
+    </div>
+
+    <div id="cropperContenedor" class="cropper-contenedor" hidden>
+      <div class="cropper-stage">
+        <canvas id="cropCanvas" width="300" height="300"></canvas>
+      </div>
+      <div class="fila">
+        <label>Zoom de recorte 1:1 <input type="range" id="cropZoom" min="1" max="3" step="0.02" value="1"></label>
+        <button type="button" id="btnCambiarOtraImg"><svg class="ico"><use href="#i-imagen"/></svg>Elegir otra</button>
+      </div>
+    </div>
+
+    <div class="dlg-acciones">
+      <button type="button" id="btnCropCancelar">Cancelar</button>
+      <button type="button" id="btnCropOmitir">Omitir imagen</button>
+      <button type="button" class="btn-prim" id="btnCropConfirmar" hidden><svg class="ico"><use href="#i-check"/></svg>Confirmar</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Diálogo para Usuarios: Asignar Privilegios y Permisos con Interruptores -->
+<dialog id="dlgPermisosUsuario" aria-labelledby="permUsrTitulo">
+  <form class="dlg dlg-ancho" id="formPermisosUsuario" novalidate>
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" id="btnPermMacClose" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="permUsrTitulo">Privilegios y Permisos del Usuario</h2>
+    </div>
+    <p class="sub" id="permUsrSubtitulo">Activa o desactiva con los interruptores las funciones autorizadas para este usuario:</p>
+    <div class="lista-switches mt" id="listaSwitchesPermisosUsr"></div>
+    <div class="dlg-acciones">
+      <button type="button" id="btnCancelarPermisosUsr">Cancelar</button>
+      <button type="submit" class="btn-prim" id="btnGuardarPermisosUsr"><svg class="ico"><use href="#i-check"/></svg>Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Diálogo para imprimir o guardar PDF en Reportes (Selección Ticket 80mm vs Hoja A4 e impresora) -->
+<dialog id="dlgImprimirReporte" aria-labelledby="impRepTitulo">
+  <form class="dlg" id="formImprimirReporte" novalidate>
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" data-cerrar-dlg="dlgImprimirReporte" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="impRepTitulo">Imprimir o guardar reporte PDF</h2>
+    </div>
+    <p class="sub">Selecciona el formato de salida antes de continuar:</p>
+    <div class="metodos">
+      <button type="button" class="metodo active" data-fmt-rep="a4">
+        <svg class="ico"><use href="#i-impresora"/></svg>
+        <span><b>Hoja A4</b><small>Selecciona impresora y modo de color</small></span>
+      </button>
+      <button type="button" class="metodo" data-fmt-rep="80mm">
+        <svg class="ico"><use href="#i-recibo"/></svg>
+        <span><b>Ticket normal (80mm)</b><small>Impresión directa en ticketera</small></span>
+      </button>
+    </div>
+    <div id="bloqueOpcionesA4" class="campos mt">
+      <label>Seleccionar impresora de destino (A4)
+        <select id="selImpresoraA4"></select>
+      </label>
+      <label>Modo de color del documento A4
+        <select id="selColorA4">
+          <option value="color">A colores</option>
+          <option value="bn">Blanco y negro (Escala de grises)</option>
+        </select>
+      </label>
+    </div>
+    <div class="dlg-acciones">
+      <button type="button" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn-prim"><svg class="ico"><use href="#i-impresora"/></svg>Imprimir / PDF</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Formulario genérico -->
+<dialog id="dlgForm" aria-labelledby="formTitulo">
+  <form class="dlg" id="formGenerico" novalidate>
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" id="btnFormMacClose" data-cancelar aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="formTitulo"></h2>
+    </div>
+    <p class="sub" id="formTexto"></p>
+    <div id="formCampos" class="campos"></div>
+    <p class="error" id="formError" role="alert"></p>
+    <div class="dlg-acciones"><button type="button" data-cancelar>Cancelar</button><button type="submit" class="btn-prim" id="formOk">Continuar</button></div>
+  </form>
+</dialog>
+
+<!-- Confirmación de seguridad con contraseña y bloqueo temporal de 5 segundos -->
+<dialog id="dlgConfirm" aria-labelledby="confTitulo">
+  <form method="dialog" class="dlg" id="formConfirmSeguridad">
+    <div class="dlg-mac-bar">
+      <button type="button" class="dlg-mac-close" id="btnConfirmMacClose" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <h2 id="confTitulo"></h2>
+    </div>
+    <p id="confTexto" class="conf-texto"></p>
+    <div id="bloquePinSeguridad" class="campos">
+      <label id="lblConfPinSeguridad">Contraseña de autorización (requerida para confirmar)
+        <input type="password" id="confPinAdmin" maxlength="20" placeholder="Ingresa tu contraseña" autocomplete="new-password">
+      </label>
+      <p class="error" id="confPinError" role="alert"></p>
+    </div>
+    <div class="dlg-acciones">
+      <button type="button" id="confCancelar">Cancelar</button>
+      <button type="submit" id="confOk" class="btn-no">Continuar (5s)</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="impresion" aria-hidden="true"></div>
+
+<script src="dinawil.js"></script>
+</body>
+</html>
