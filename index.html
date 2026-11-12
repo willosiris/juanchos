@@ -634,6 +634,14 @@
                 <span><b>Sincronización automática en tiempo real</b><small>Cada venta, plato, insumo, envío o usuario modificado se envía automáticamente a Supabase.</small></span>
                 <input type="checkbox" id="swSupaAutoSync" class="ios-chk" checked>
               </label>
+              <label class="mt">Frecuencia de respaldo completo (respaldos_json)
+                <select id="supaFrecuenciaRespaldo">
+                  <option value="manual">Manual únicamente (solo al pulsar 'Subir Respaldo a Nube')</option>
+                  <option value="30m">Automático cada 30 minutos</option>
+                  <option value="1h" selected>Automático cada 1 hora (Recomendado)</option>
+                  <option value="turno">Al cerrar turno de caja</option>
+                </select>
+              </label>
               <div class="supa-stats mt" id="supaConteosLive" aria-live="polite"></div>
               <p class="sub mt">Las consultas desde el navegador usan la <b>Publishable Key</b> (Supabase restringe las Secret Keys únicamente para entornos de servidor). Asegúrate de ejecutar el Script SQL de la derecha con las políticas RLS habilitadas.</p>
               <div class="supa-actions mt">
@@ -953,7 +961,7 @@
     </div>
     <div id="modOpciones" class="opciones"></div>
     <label>Observaciones para cocina <textarea id="modObs" maxlength="200" placeholder="Ej. sin sal, para llevar"></textarea></label>
-    <div class="dlg-acciones"><button value="cancelar" formnovalidate>Cancelar</button><button id="btnModOk" class="btn-prim" value="ok">Agregar a la cuenta</button></div>
+    <div class="dlg-acciones"><button type="button" data-cerrar-dlg="dlgMod">Cancelar</button><button id="btnModOk" class="btn-prim" value="ok">Agregar a la cuenta</button></div>
   </form>
 </dialog>
 
@@ -977,7 +985,7 @@
       <div id="splitItems" class="opciones una"></div>
       <button type="button" id="btnSplitItems" class="btn-prim">Cobrar seleccionados</button>
     </div>
-    <div class="dlg-acciones"><button value="cerrar">Cancelar</button></div>
+    <div class="dlg-acciones"><button type="button" data-cerrar-dlg="dlgSplit">Cancelar</button></div>
   </form>
 </dialog>
 
@@ -1001,7 +1009,7 @@
       <p class="nota"><svg class="ico"><use href="#i-alerta"/></svg>Confirma en el aplicativo que el Yape ingresó antes de registrar el pago.</p>
     </div>
     <label class="check"><input type="checkbox" id="cobroImprimir" checked> Imprimir comprobante</label>
-    <div class="dlg-acciones"><button type="button" data-cerrar>Cancelar</button><button type="submit" id="btnCobroOk" class="btn-ok btn-yape-fx">Confirmar cobro</button></div>
+    <div class="dlg-acciones"><button type="button" data-cerrar-dlg="dlgCobro">Cancelar</button><button type="submit" id="btnCobroOk" class="btn-ok btn-yape-fx">Confirmar cobro</button></div>
   </form>
 </dialog>
 
@@ -1023,6 +1031,9 @@
         <span><b>Sigue ocupada (pagada)</b><small>Avisar que sigue ocupada hasta que se retiren</small></span>
       </button>
     </div>
+    <div class="dlg-acciones mt">
+      <button type="button" data-cerrar-dlg="dlgEstadoMesaPostPago">Decidir luego / Cerrar</button>
+    </div>
   </form>
 </dialog>
 
@@ -1030,7 +1041,7 @@
 <dialog id="dlgRecorte" aria-labelledby="recorteTitulo">
   <div class="dlg">
     <div class="dlg-mac-bar">
-      <button type="button" class="dlg-mac-close" id="btnCropMacClose" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <button type="button" class="dlg-mac-close" id="btnCropMacClose" data-cerrar-dlg="dlgRecorte" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
       <h2 id="recorteTitulo">Imagen de referencia (Formato 1:1)</h2>
     </div>
     <p class="sub" id="recorteSubtitulo">Puedes arrastrar una imagen al recuadro, seleccionarla desde tus archivos para recortarla en formato 1:1 (respetando fondo transparente PNG), u omitir este paso.</p>
@@ -1054,7 +1065,7 @@
     </div>
 
     <div class="dlg-acciones">
-      <button type="button" id="btnCropCancelar">Cancelar</button>
+      <button type="button" id="btnCropCancelar" data-cerrar-dlg="dlgRecorte">Cancelar</button>
       <button type="button" id="btnCropOmitir">Omitir imagen</button>
       <button type="button" class="btn-prim" id="btnCropConfirmar" hidden><svg class="ico"><use href="#i-check"/></svg>Confirmar</button>
     </div>
@@ -1065,13 +1076,13 @@
 <dialog id="dlgPermisosUsuario" aria-labelledby="permUsrTitulo">
   <form class="dlg dlg-ancho" id="formPermisosUsuario" novalidate>
     <div class="dlg-mac-bar">
-      <button type="button" class="dlg-mac-close" id="btnPermMacClose" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <button type="button" class="dlg-mac-close" id="btnPermMacClose" data-cerrar-dlg="dlgPermisosUsuario" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
       <h2 id="permUsrTitulo">Privilegios y Permisos del Usuario</h2>
     </div>
     <p class="sub" id="permUsrSubtitulo">Activa o desactiva con los interruptores las funciones autorizadas para este usuario:</p>
     <div class="lista-switches mt" id="listaSwitchesPermisosUsr"></div>
     <div class="dlg-acciones">
-      <button type="button" id="btnCancelarPermisosUsr">Cancelar</button>
+      <button type="button" id="btnCancelarPermisosUsr" data-cerrar-dlg="dlgPermisosUsuario">Cancelar</button>
       <button type="submit" class="btn-prim" id="btnGuardarPermisosUsr"><svg class="ico"><use href="#i-check"/></svg>Guardar</button>
     </div>
   </form>
@@ -1105,7 +1116,7 @@
       <p class="sub">Al continuar se abrirá la ventana del navegador para elegir tu impresora o guardar en PDF.</p>
     </div>
     <div class="dlg-acciones">
-      <button type="button" data-cerrar>Cancelar</button>
+      <button type="button" data-cerrar-dlg="dlgImprimirReporte">Cancelar</button>
       <button type="submit" class="btn-prim"><svg class="ico"><use href="#i-impresora"/></svg>Imprimir / PDF</button>
     </div>
   </form>
@@ -1115,13 +1126,13 @@
 <dialog id="dlgForm" aria-labelledby="formTitulo">
   <form class="dlg" id="formGenerico" novalidate>
     <div class="dlg-mac-bar">
-      <button type="button" class="dlg-mac-close" id="btnFormMacClose" data-cancelar aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <button type="button" class="dlg-mac-close" id="btnFormMacClose" data-cancelar data-cerrar-dlg="dlgForm" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
       <h2 id="formTitulo"></h2>
     </div>
     <p class="sub" id="formTexto"></p>
     <div id="formCampos" class="campos"></div>
     <p class="error" id="formError" role="alert"></p>
-    <div class="dlg-acciones"><button type="button" data-cancelar>Cancelar</button><button type="submit" class="btn-prim" id="formOk">Continuar</button></div>
+    <div class="dlg-acciones"><button type="button" data-cancelar data-cerrar-dlg="dlgForm">Cancelar</button><button type="submit" class="btn-prim" id="formOk">Continuar</button></div>
   </form>
 </dialog>
 
@@ -1129,7 +1140,7 @@
 <dialog id="dlgConfirm" aria-labelledby="confTitulo">
   <form method="dialog" class="dlg" id="formConfirmSeguridad">
     <div class="dlg-mac-bar">
-      <button type="button" class="dlg-mac-close" id="btnConfirmMacClose" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <button type="button" class="dlg-mac-close" id="btnConfirmMacClose" data-cerrar-dlg="dlgConfirm" aria-label="Cerrar ventana" title="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
       <h2 id="confTitulo"></h2>
     </div>
     <p id="confTexto" class="conf-texto"></p>
@@ -1140,7 +1151,7 @@
       <p class="error" id="confPinError" role="alert"></p>
     </div>
     <div class="dlg-acciones">
-      <button type="button" id="confCancelar">Cancelar</button>
+      <button type="button" id="confCancelar" data-cerrar-dlg="dlgConfirm">Cancelar</button>
       <button type="submit" id="confOk" class="btn-no">Continuar (5s)</button>
     </div>
   </form>
