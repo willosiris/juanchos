@@ -413,9 +413,8 @@
         <h2 id="tAj">Ajustes del administrador</h2>
         <div class="segmento" id="navAjustes" role="tablist">
           <button class="active" data-subtab="aj-usuarios" role="tab">Usuarios y roles</button>
-          <button data-subtab="aj-impresion" role="tab">Impresoras y Tickets</button>
+          <button data-subtab="aj-impresion" role="tab">Impresión y Tickets</button>
           <button data-subtab="aj-supabase" role="tab">Conexión Supabase</button>
-          <button data-subtab="aj-colores" role="tab">Colores y tema</button>
           <button data-subtab="aj-licencia" role="tab"><svg class="ico"><use href="#i-llave"/></svg>Licencia</button>
         </div>
       </div>
@@ -468,37 +467,13 @@
         </div>
       </div>
 
-      <!-- 7.2 Sub-pestaña: Impresoras por defecto, Modo Cliente vs Control Interno y Editor completo 80mm / A4 -->
+      <!-- 7.2 Sub-pestaña: Comportamiento de impresión y Editor completo (Control Interno, Cliente y Hoja A4) -->
       <div id="aj-impresion" class="subtab">
         <div class="columnas">
           <div class="col ancha">
             <div class="panel">
-              <h3>1. Impresoras del sistema e interruptores generales</h3>
-              <p class="sub">Abre el selector de impresoras del navegador con los drivers instalados en tu equipo o selecciona la impresora predeterminada para cada formato.</p>
-
-              <div class="tarjetas-impresoras mt">
-                <div class="imp-card">
-                  <div>
-                    <small class="sub">Ticketera de Caja (80mm)</small>
-                    <strong id="lblImpCajaActual">Ticketera_Caja_80mm</strong>
-                  </div>
-                  <button type="button" id="btnModImp80mm"><svg class="ico"><use href="#i-impresora"/></svg>Seleccionar 80mm</button>
-                </div>
-                <div class="imp-card">
-                  <div>
-                    <small class="sub">Ticketera de Cocina (80mm)</small>
-                    <strong id="lblImpCocinaActual">Ticketera_Cocina_80mm</strong>
-                  </div>
-                  <button type="button" id="btnModImpCocina"><svg class="ico"><use href="#i-impresora"/></svg>Seleccionar Cocina</button>
-                </div>
-                <div class="imp-card">
-                  <div>
-                    <small class="sub">Impresora de Reportes (A4)</small>
-                    <strong id="lblImpA4Actual">Impresora_Oficina_A4</strong>
-                  </div>
-                  <button type="button" id="btnModImpA4"><svg class="ico"><use href="#i-impresora"/></svg>Seleccionar A4</button>
-                </div>
-              </div>
+              <h3>1. Comportamiento de impresión</h3>
+              <p class="sub">Al imprimir desde el navegador, elegirás tu impresora en la ventana del sistema. Los tickets de atención y cocina usan formato de rollo térmico por defecto, y la hoja A4 se usa únicamente para reportes de ventas.</p>
 
               <div class="lista-switches mt">
                 <label class="switch-row destacado">
@@ -513,7 +488,7 @@
                   <input type="checkbox" id="swImpCocina" class="ios-chk">
                 </label>
                 <label class="switch-row">
-                  <span><b>Imprimir comprobante al cobrar</b><small>Envía el ticket de 80mm automáticamente al confirmar el cobro.</small></span>
+                  <span><b>Imprimir comprobante al cobrar</b><small>Envía el ticket automáticamente al confirmar el cobro.</small></span>
                   <input type="checkbox" id="swImpCobro" class="ios-chk" checked>
                 </label>
                 <label class="switch-row">
@@ -526,16 +501,17 @@
             <form id="formImpresoras" class="panel" novalidate>
               <div class="panel-cab">
                 <div>
-                  <h3>2. Editor completo de Tickets 80mm (Control Interno y Cliente)</h3>
-                  <p class="sub">Edita cada apartado por separado. Todo el encabezado, etiquetas y pie son editables; únicamente las líneas de productos vendidos y los importes calculados son automáticos.</p>
+                  <h3>2. Editor de Tickets y Hoja A4</h3>
+                  <p class="sub">Edita cada formato por separado. Todo el encabezado, etiquetas y pie son editables; únicamente las líneas de productos vendidos y los importes calculados son automáticos.</p>
                 </div>
                 <div class="segmento" id="tabsPlantillaTicket" role="tablist">
                   <button type="button" class="active" data-tpl="interno" role="tab">Ticket Control Interno</button>
                   <button type="button" data-tpl="cliente" role="tab">Ticket para Cliente</button>
+                  <button type="button" data-tpl="a4" role="tab">Hoja A4</button>
                 </div>
               </div>
 
-              <h4 class="subtitulo-bloque">Encabezado completo del Ticket (<span id="etqPlantillaEditando">Control Interno</span>)</h4>
+              <h4 class="subtitulo-bloque">Encabezado completo (<span id="etqPlantillaEditando">Control Interno</span>)</h4>
               <div class="fila">
                 <label>Título / Nombre principal en encabezado <input id="tktTituloMarca" maxlength="60" placeholder="Ej. CONTROL INTERNO · CAJA o Juancho's"></label>
                 <label>Subtítulo / Lema bajo el nombre <input id="tktSubtituloMarca" maxlength="80" placeholder="Ej. DOCUMENTO DE CONTROL INTERNO"></label>
@@ -550,34 +526,36 @@
                 <label>Título del documento sobre los datos <input id="tktTituloDoc" maxlength="60" placeholder="Ej. TICKET DE CONTROL INTERNO"></label>
               </div>
 
-              <h4 class="subtitulo-bloque">Etiquetas de datos de la orden y de importes</h4>
-              <div class="fila">
-                <label class="corto">Etiqueta Origen/Mesa <input id="tktLblCheck" maxlength="24" placeholder="Check:"></label>
-                <label class="corto">Etiqueta Cajero <input id="tktLblCajero" maxlength="24" placeholder="Cashier:"></label>
-                <label class="corto">Etiqueta N.º Orden <input id="tktLblOrden" maxlength="24" placeholder="Order #:"></label>
-                <label class="corto">Etiqueta Cliente <input id="tktLblCliente" maxlength="24" placeholder="Cliente:"></label>
-                <label class="corto">Etiqueta Fecha <input id="tktLblFecha" maxlength="20" placeholder="DATE:"></label>
-                <label class="corto">Etiqueta Hora <input id="tktLblHora" maxlength="20" placeholder="TIME:"></label>
-              </div>
-              <div class="fila mt">
-                <label class="corto">Etiqueta Subtotal <input id="tktLblSubtotal" maxlength="24" placeholder="SUBTOTAL"></label>
-                <label class="corto">Etiqueta IGV <input id="tktLblIgv" maxlength="24" placeholder="IGV (18%)"></label>
-                <label class="corto">Etiqueta Total <input id="tktLblTotal" maxlength="24" placeholder="TOTAL"></label>
-                <label class="corto">Etiqueta Pago <input id="tktLblMetodo" maxlength="24" placeholder="PAYMENT"></label>
-                <label class="corto">Etiqueta Recibido <input id="tktLblRecibido" maxlength="24" placeholder="AMOUNT"></label>
-                <label class="corto">Etiqueta Vuelto <input id="tktLblVuelto" maxlength="24" placeholder="CHANGE DUE"></label>
+              <div id="bloqueEtiquetasTicket">
+                <h4 class="subtitulo-bloque">Etiquetas de datos de la orden y de importes</h4>
+                <div class="fila">
+                  <label class="corto">Etiqueta Origen/Mesa <input id="tktLblCheck" maxlength="24" placeholder="Check:"></label>
+                  <label class="corto">Etiqueta Cajero <input id="tktLblCajero" maxlength="24" placeholder="Cashier:"></label>
+                  <label class="corto">Etiqueta N.º Orden <input id="tktLblOrden" maxlength="24" placeholder="Order #:"></label>
+                  <label class="corto">Etiqueta Cliente <input id="tktLblCliente" maxlength="24" placeholder="Cliente:"></label>
+                  <label class="corto">Etiqueta Fecha <input id="tktLblFecha" maxlength="20" placeholder="DATE:"></label>
+                  <label class="corto">Etiqueta Hora <input id="tktLblHora" maxlength="20" placeholder="TIME:"></label>
+                </div>
+                <div class="fila mt">
+                  <label class="corto">Etiqueta Subtotal <input id="tktLblSubtotal" maxlength="24" placeholder="SUBTOTAL"></label>
+                  <label class="corto">Etiqueta IGV <input id="tktLblIgv" maxlength="24" placeholder="IGV (18%)"></label>
+                  <label class="corto">Etiqueta Total <input id="tktLblTotal" maxlength="24" placeholder="TOTAL"></label>
+                  <label class="corto">Etiqueta Pago <input id="tktLblMetodo" maxlength="24" placeholder="PAYMENT"></label>
+                  <label class="corto">Etiqueta Recibido <input id="tktLblRecibido" maxlength="24" placeholder="AMOUNT"></label>
+                  <label class="corto">Etiqueta Vuelto <input id="tktLblVuelto" maxlength="24" placeholder="CHANGE DUE"></label>
+                </div>
               </div>
 
               <h4 class="subtitulo-bloque">Pie de página, márgenes y formato A4</h4>
               <div class="fila">
-                <label>Mensaje de pie de página <input id="tktPie" maxlength="140" placeholder="Texto inferior del ticket"></label>
+                <label>Mensaje de pie de página <input id="tktPie" maxlength="160" placeholder="Texto inferior del documento"></label>
                 <label>Texto adicional / Promoción / Nota interna <input id="tktPromo" maxlength="140" placeholder="Nota o promoción"></label>
-                <label class="corto">Etiqueta de código <input id="tktLblCodigo" maxlength="30" placeholder="Código:"></label>
+                <label class="corto" id="wrapLblCodigo">Etiqueta de código <input id="tktLblCodigo" maxlength="30" placeholder="Código:"></label>
               </div>
               <div class="fila mt">
-                <label class="corto">Margen (mm) <input id="tktMargen" type="number" min="0" max="12" value="4"></label>
-                <label class="corto">Letra encabezado (px) <input id="tktFontTitulo" type="number" min="12" max="24" value="16"></label>
-                <label class="corto">Letra contenido (px) <input id="tktFontCuerpo" type="number" min="10" max="16" value="12"></label>
+                <label class="corto">Margen (mm) <input id="tktMargen" type="number" min="0" max="20" value="4"></label>
+                <label class="corto">Letra encabezado (px) <input id="tktFontTitulo" type="number" min="12" max="28" value="16"></label>
+                <label class="corto">Letra contenido (px) <input id="tktFontCuerpo" type="number" min="10" max="18" value="12"></label>
                 <label>Modo de reporte A4
                   <select id="repColorModo">
                     <option value="color">A colores</option>
@@ -588,14 +566,14 @@
 
               <div class="lista-switches mt">
                 <label class="switch-row">
-                  <span><b>Mostrar logo en el encabezado de este ticket</b><small>Imprime el logo centrado en la parte superior.</small></span>
+                  <span><b>Mostrar logo en el encabezado</b><small>Imprime el logo en la parte superior del documento.</small></span>
                   <input type="checkbox" id="swTktLogo" class="ios-chk" checked>
                 </label>
                 <label class="switch-row">
-                  <span><b>Mostrar desglose de Subtotal e IGV</b><small>Si se desactiva, muestra directamente el Total de los productos.</small></span>
+                  <span><b id="lblSwitchImpuestosTit">Mostrar desglose de Subtotal e IGV</b><small id="lblSwitchImpuestosSub">Si se desactiva, muestra directamente el Total de los productos.</small></span>
                   <input type="checkbox" id="swTktImpuestos" class="ios-chk" checked>
                 </label>
-                <label class="switch-row">
+                <label class="switch-row" id="wrapTktBarcode">
                   <span><b>Mostrar código de barras en el pie del ticket</b><small>Genera el código de barras con el número de orden.</small></span>
                   <input type="checkbox" id="swTktBarcode" class="ios-chk" checked>
                 </label>
@@ -603,7 +581,7 @@
 
               <div class="fila mt">
                 <button type="submit" class="btn-prim">Guardar diseño</button>
-                <button type="button" id="btnProbarTicket80"><svg class="ico"><use href="#i-impresora"/></svg>Probar impresión 80mm</button>
+                <button type="button" id="btnProbarTicket80"><svg class="ico"><use href="#i-impresora"/></svg>Probar impresión</button>
               </div>
             </form>
           </div>
@@ -611,11 +589,11 @@
           <div class="col">
             <div class="panel vista-previa-sticky">
               <div class="panel-cab">
-                <h3>Vista previa en vivo · 80mm</h3>
+                <h3>Vista previa en vivo</h3>
                 <span class="badge ok" id="badgeTipoVistaPrevia">Control Interno</span>
               </div>
-              <p class="sub">En Control Interno, el número de mesa se muestra gigante al centro (visible a 3 metros), seguido de los platos a atender y luego el detalle con precios.</p>
-              <div class="ticket-80-preview-wrap mt">
+              <p class="sub" id="descVistaPrevia">En Control Interno, el número de mesa se muestra gigante al centro (visible a 3 metros), seguido de los platos a atender y luego el detalle con precios.</p>
+              <div class="ticket-80-preview-wrap mt" id="vistaPreviaContenedor">
                 <div id="vistaPreviaTicket80" class="ticket-80-paper"></div>
               </div>
             </div>
@@ -630,22 +608,29 @@
             <div>
               <div class="supa-title-row">
                 <h3>Conexión a Supabase (Base de Datos en la Nube)</h3>
-                <span class="supa-badge" id="supaEstadoBadge">DESBLOQUEADO</span>
+                <span class="supa-badge" id="supaEstadoBadge">CONECTADO</span>
               </div>
-              <p class="sub">Conecta tu proyecto de Supabase para respaldar tu almacén, clientes, ventas y usuarios.</p>
+              <p class="sub">Conecta tu proyecto de Supabase REST v1 para respaldar tu almacén, clientes, ventas y usuarios.</p>
             </div>
             <button type="button" class="btn-supa-dark" id="btnCopiarSqlSupa"><svg class="ico"><use href="#i-copiar"/></svg>Copiar Script SQL Completo</button>
           </div>
 
           <div class="supa-grid">
             <div class="supa-card">
-              <h4>1. Credenciales de tu proyecto Supabase (Preconfiguradas)</h4>
-              <label>Supabase Project URL
-                <input id="supaUrl" value="https://qkhliyvtrawtveexuxls.supabase.co" readonly>
+              <h4>1. Credenciales de tu proyecto Supabase</h4>
+              <label>API URL (REST v1)
+                <input id="supaUrl" value="https://lbjxpbroaprflqbwjbkz.supabase.co/rest/v1/" readonly>
               </label>
-              <label class="mt">Supabase Publishable / Anon Key
-                <input id="supaKey" value="sb_publishable_Ds4IYaHux6yT2koNicw4Ug_OoZYyCQ_" readonly>
+              <label class="mt">Publishable Key
+                <input id="supaKey" value="sb_publishable_1X3z3mGMFy64hqCS1bwZVw_ZvcWFmzX" readonly>
               </label>
+              <label class="mt">Secret Key (Respaldo de administrador)
+                <div class="en-linea" style="margin-bottom:0">
+                  <input id="supaSecretKey" type="password" value="sb_secret_aEG0A7mbdiv6ixpMKz52nA_49xCL6Vd" readonly autocomplete="off">
+                  <button type="button" id="btnToggleSupaSecret" class="btn-icono" title="Mostrar u ocultar Secret Key" aria-label="Mostrar u ocultar Secret Key"><svg class="ico"><use href="#i-llave"/></svg></button>
+                </div>
+              </label>
+              <p class="sub mt">Las consultas desde el navegador usan la <b>Publishable Key</b> (Supabase restringe las Secret Keys únicamente para entornos de servidor). Asegúrate de ejecutar el Script SQL de la derecha con las políticas RLS habilitadas.</p>
               <div class="supa-actions mt">
                 <button type="button" class="btn-supa-dark" id="btnSupaProbar">Probar y Reconectar</button>
                 <button type="button" class="btn-supa-outline" id="btnSupaDescargar">Descargar Datos de Nube</button>
@@ -659,24 +644,10 @@
             </div>
 
             <div class="supa-card">
-              <h4>2. Código SQL para el SQL Editor de Supabase</h4>
+              <h4>2. Código SQL para el SQL Editor de Supabase (con RLS activo)</h4>
               <pre class="supa-code" id="sqlSupabaseCode" tabindex="0"></pre>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- 7.4 Sub-pestaña: 5 Temas Predefinidos (Acceso directo sin doble contraseña) -->
-      <div id="aj-colores" class="subtab">
-        <div class="panel">
-          <div class="panel-cab">
-            <div>
-              <h3>Temas Predefinidos de la Página</h3>
-              <p class="sub">Elige una de las 5 paletas de diseño creadas para operación en restaurante. Se aplica al instante en toda la aplicación.</p>
-            </div>
-            <button type="button" id="btnResetColores" class="btn-icono btn-reloj-reset" title="Restablecer tema original" aria-label="Restablecer tema original"><svg class="ico"><use href="#i-reiniciar"/></svg></button>
-          </div>
-          <div class="grid-temas-preset mt" id="gridTemasPredefinidos"></div>
         </div>
       </div>
 
@@ -1023,7 +994,7 @@
       <label>N.º de operación Yape (opcional) <input id="cobroReferencia" inputmode="numeric" maxlength="20" autocomplete="off" placeholder="Ej. 01234567"></label>
       <p class="nota"><svg class="ico"><use href="#i-alerta"/></svg>Confirma en el aplicativo que el Yape ingresó antes de registrar el pago.</p>
     </div>
-    <label class="check"><input type="checkbox" id="cobroImprimir" checked> Imprimir comprobante (Ticketera 80mm)</label>
+    <label class="check"><input type="checkbox" id="cobroImprimir" checked> Imprimir comprobante</label>
     <div class="dlg-acciones"><button type="button" data-cerrar>Cancelar</button><button type="submit" id="btnCobroOk" class="btn-ok btn-yape-fx">Confirmar cobro</button></div>
   </form>
 </dialog>
@@ -1100,7 +1071,7 @@
   </form>
 </dialog>
 
-<!-- Diálogo para imprimir o guardar PDF en Reportes (Selección Ticket 80mm vs Hoja A4 e impresora) -->
+<!-- Diálogo para imprimir o guardar PDF en Reportes (Selección Hoja A4 vs Ticket normal) -->
 <dialog id="dlgImprimirReporte" aria-labelledby="impRepTitulo">
   <form class="dlg" id="formImprimirReporte" novalidate>
     <div class="dlg-mac-bar">
@@ -1111,23 +1082,21 @@
     <div class="metodos">
       <button type="button" class="metodo active" data-fmt-rep="a4">
         <svg class="ico"><use href="#i-impresora"/></svg>
-        <span><b>Hoja A4</b><small>Selecciona impresora y modo de color</small></span>
+        <span><b>Hoja A4</b><small>Reporte completo en hoja completa</small></span>
       </button>
       <button type="button" class="metodo" data-fmt-rep="80mm">
         <svg class="ico"><use href="#i-recibo"/></svg>
-        <span><b>Ticket normal (80mm)</b><small>Impresión directa en ticketera</small></span>
+        <span><b>Ticket normal</b><small>Resumen rápido en ticketera</small></span>
       </button>
     </div>
     <div id="bloqueOpcionesA4" class="campos mt">
-      <label>Seleccionar impresora de destino (A4)
-        <select id="selImpresoraA4"></select>
-      </label>
       <label>Modo de color del documento A4
         <select id="selColorA4">
           <option value="color">A colores</option>
           <option value="bn">Blanco y negro (Escala de grises)</option>
         </select>
       </label>
+      <p class="sub">Al continuar se abrirá la ventana del navegador para elegir tu impresora o guardar en PDF.</p>
     </div>
     <div class="dlg-acciones">
       <button type="button" data-cerrar>Cancelar</button>
