@@ -181,7 +181,8 @@ function crearDBVacia() {
       url: SUPABASE_DEFAULT_URL,
       anonKey: SUPABASE_DEFAULT_PUB_KEY,
       secretKey: SUPABASE_DEFAULT_SECRET_KEY,
-      conectado: true,
+      conectado: false,
+      autoSync: true,
       ultimaSync: null
     },
     licencia: {
@@ -250,21 +251,36 @@ let cobroActual = null;
 let ultimoItemAgregadoKey = null;
 let toastTimer = null;
 let licenciaDesbloqueada = false;
+let supaBootListo = false;
+let supaSyncTimer = null;
+let supaSyncEnCurso = false;
+let supaSyncPendiente = false;
+let supaLiveInfo = { verificado: false, latenciaMs: null, conteos: null, ultimoError: '' };
 
 function normalizarDB(d) {
   const base = crearDBVacia();
   if (!d || typeof d !== 'object') return base;
   const impIn = d.impresion || {};
   const supaIn = d.supabase || {};
-  const usaAntiguaSupa = typeof supaIn.url === 'string' && supaIn.url.includes('qkhliyvtrawtveexuxls');
+  const urlSupa = String(supaIn.url || '').trim();
+  const keySupa = String(supaIn.anonKey || '').trim();
+  const usaAntiguaSupa =
+    urlSupa.includes('qkhliyvtrawtveexuxls') ||
+    (!supaIn.eliminadaManual && (
+      !urlSupa ||
+      keySupa.startsWith('sb_secret_') ||
+      (urlSupa.includes('lbjxpbroaprflqbwjbkz') && !keySupa.startsWith('sb_publishable_'))
+    ));
   const supaNorm = usaAntiguaSupa
     ? { ...base.supabase }
     : {
         ...base.supabase,
         ...supaIn,
-        url: supaIn.url || base.supabase.url,
-        anonKey: supaIn.anonKey || base.supabase.anonKey,
-        secretKey: supaIn.secretKey || base.supabase.secretKey
+        url: urlSupa || base.supabase.url,
+        anonKey: keySupa || base.supabase.anonKey,
+        secretKey: supaIn.secretKey || base.supabase.secretKey,
+        conectado: false,
+        autoSync: supaIn.autoSync !== false
       };
   const out = {
     ...base,
@@ -320,8 +336,11 @@ function cargarDB() {
   } catch (_) {}
   return crearDBVacia();
 }
-function guardarDB() {
+function guardarDB(opts = {}) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); } catch (_) {}
+  if (supaBootListo && !opts?.sinSync && typeof programarSyncSupabase === 'function') {
+    programarSyncSupabase();
+  }
 }
 function sigId(clave) {
   DB.secuencias[clave] = (DB.secuencias[clave] || 0) + 1;
@@ -340,7 +359,7 @@ function registrarActividad(accion, detalle = '') {
 }
 
 /* ================= Tema Oscuro / Claro (Estilo iOS) ================= */
-function aplicarTema(tema) {
+function aplicarTema(tema, sinGuardar = false) {
   DB.tema = tema === 'light' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', DB.tema);
   const esClaro = DB.tema === 'light';
@@ -352,7 +371,7 @@ function aplicarTema(tema) {
   if (lbl) lbl.textContent = esClaro ? 'Claro' : 'Oscuro';
   const meta = $('#metaThemeColor');
   if (meta) meta.setAttribute('content', esClaro ? '#f6f2ec' : '#12100e');
-  guardarDB();
+  if (!sinGuardar) guardarDB();
 }
 function alternarTema() {
   const nuevoModo = DB.tema === 'light' ? 'dark' : 'light';
@@ -1857,10 +1876,10 @@ function renderEnvios() {
         <span class="badge ${cls}">${esc(txtPago)}${ev.referenciaYape ? ` · Op. ${esc(ev.referenciaYape)}` : ''}</span>
       </div>
       <div class="fila">
-        <span class="sub">${ev.items.length} ítem(s) · <b>${soles(t.pendiente)}</b> · ${ev.cocinaEntregado ? 'Listo / Entregado' : 'En preparación'}</span>
+        <span class="sub">${(ev.items || []).length} ítem(s) · <b>${soles(t.pendiente)}</b> · ${ev.cocinaEntregado ? 'Listo / Entregado' : 'En preparación'}</span>
         <div class="envio-acc">
           <button type="button" class="btn-prim" data-sel-envio="${ev.id}"><svg class="ico"><use href="#i-comanda"/></svg>Editar / Ver pedido</button>
-          <button type="button" class="btn-ok" data-cobrar-envio="${ev.id}" ${!ev.items.length ? 'disabled' : ''}><svg class="ico"><use href="#i-caja"/></svg>Cobrar envío</button>
+          <button type="button" class="btn-ok" data-cobrar-envio="${ev.id}" ${!(ev.items || []).length ? 'disabled' : ''}><svg class="ico"><use href="#i-caja"/></svg>Cobrar envío</button>
           <button type="button" class="btn-mini peligro" data-borrar-envio="${ev.id}" title="Cancelar envío"><svg class="ico"><use href="#i-trash"/></svg></button>
         </div>
       </div>
@@ -2646,6 +2665,8 @@ async function confirmarCobro(e) {
     items: resumenItems
   };
   DB.ventas.unshift(venta);
+  guardarDB();
+  enviarVentaRealASupabase(venta);
 
   if (cobroActual.modo === 'items' && cobroActual.itemsQuitados) {
     for (const q of cobroActual.itemsQuitados) {
@@ -4488,10 +4509,30 @@ function guardarConfigImpresoras(e) {
 }
 
 /* --- 8.3 Conexión a Supabase REST v1 (Publishable Key en navegador + Políticas RLS) --- */
-const TEXTO_SQL_SUPABASE = `-- SCRIPT SQL PARA SUPABASE (JUANCHO'S POS - POSTGRESQL + RLS REST v1)
+const TEXTO_SQL_SUPABASE = `-- ============================================================================
+-- SCRIPT SQL DEFINITIVO PARA SUPABASE (JUANCHO'S POS - POSTGRESQL + RLS)
+-- Compatible al 100% con la API REST v1 y la sincronización en tiempo real.
+-- ============================================================================
+
+-- 0. (OPCIONAL) Si deseas reiniciar las tablas desde cero, descomenta este bloque:
+/*
+DROP TABLE IF EXISTS public.ventas_pos CASCADE;
+DROP TABLE IF EXISTS public.usuarios_pos CASCADE;
+DROP TABLE IF EXISTS public.clientes CASCADE;
+DROP TABLE IF EXISTS public.almacen CASCADE;
+DROP TABLE IF EXISTS public.respaldos_json CASCADE;
+*/
+
+-- ----------------------------------------------------------------------------
+-- 1. TABLA: ALMACÉN (Carta, Platos preparados e Insumos de Cocina)
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.almacen (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  codigo TEXT DEFAULT '',
+  tipo TEXT NOT NULL DEFAULT 'PRODUCTO',
+  nombre TEXT DEFAULT '',
   descripcion TEXT NOT NULL,
+  categoria TEXT DEFAULT 'GENERAL',
   compatibilidad TEXT DEFAULT 'GENERAL',
   stock NUMERIC(12,2) NOT NULL DEFAULT 0,
   und TEXT DEFAULT 'Unidad',
@@ -4503,9 +4544,18 @@ CREATE TABLE IF NOT EXISTS public.almacen (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE public.almacen ADD COLUMN IF NOT EXISTS codigo TEXT DEFAULT '';
+ALTER TABLE public.almacen ADD COLUMN IF NOT EXISTS tipo TEXT NOT NULL DEFAULT 'PRODUCTO';
+ALTER TABLE public.almacen ADD COLUMN IF NOT EXISTS nombre TEXT DEFAULT '';
+ALTER TABLE public.almacen ADD COLUMN IF NOT EXISTS categoria TEXT DEFAULT 'GENERAL';
+CREATE INDEX IF NOT EXISTS idx_almacen_descripcion ON public.almacen (descripcion);
+
+-- ----------------------------------------------------------------------------
+-- 2. TABLA: CLIENTES (Envíos a domicilio / Delivery y Clientes frecuentes)
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.clientes (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  origen TEXT NOT NULL DEFAULT 'SALON',
+  origen TEXT NOT NULL DEFAULT 'DELIVERY',
   nombre TEXT NOT NULL,
   documento TEXT DEFAULT '',
   telefono TEXT DEFAULT '',
@@ -4513,6 +4563,11 @@ CREATE TABLE IF NOT EXISTS public.clientes (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS idx_clientes_nombre ON public.clientes (nombre);
+
+-- ----------------------------------------------------------------------------
+-- 3. TABLA: USUARIOS DEL SISTEMA POS (Administradores, Cajeros y Cocina)
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.usuarios_pos (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
@@ -4525,31 +4580,62 @@ CREATE TABLE IF NOT EXISTS public.usuarios_pos (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+INSERT INTO public.usuarios_pos (username, rol, pin_hash, clave_secreta_hash, foto_url, permisos, activo)
+VALUES (
+  'WILLOSIRIS',
+  'admin',
+  '749696',
+  '749696',
+  '',
+  '["panel.acceder","caja.cobrar","mesas.trasladar","carta.administrar","inventario.ver","reportes.ver","impresion.permitir","ajustes.administrar"]'::jsonb,
+  true
+)
+ON CONFLICT (username) DO NOTHING;
+
+-- ----------------------------------------------------------------------------
+-- 4. TABLA: VENTAS Y COBROS (Registro de tickets, boletas y pagos)
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.ventas_pos (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  origen TEXT NOT NULL,
+  origen TEXT NOT NULL DEFAULT 'Salón',
   comprobante TEXT NOT NULL DEFAULT 'Ticket Interno',
   cliente TEXT NOT NULL DEFAULT 'Público general',
-  metodo_pago TEXT NOT NULL CHECK (metodo_pago IN ('Efectivo', 'Yape')),
+  metodo_pago TEXT NOT NULL DEFAULT 'Efectivo',
   referencia TEXT DEFAULT '',
-  total NUMERIC(10,2) NOT NULL,
-  usuario TEXT NOT NULL,
+  total NUMERIC(10,2) NOT NULL DEFAULT 0,
+  usuario TEXT NOT NULL DEFAULT 'WILLOSIRIS',
   detalle JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS idx_ventas_pos_created_at ON public.ventas_pos (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ventas_pos_usuario ON public.ventas_pos (usuario);
+
+-- ----------------------------------------------------------------------------
+-- 5. TABLA: RESPALDOS Y ESTADO GLOBAL (Instantánea completa del POS en JSON)
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.respaldos_json (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  nombre_local TEXT NOT NULL,
+  nombre_local TEXT NOT NULL DEFAULT 'Juancho''s',
   payload JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Permisos REST v1 y Políticas RLS para acceso desde la aplicación web POS
-GRANT USAGE ON SCHEMA public TO anon, authenticated;
-GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+CREATE INDEX IF NOT EXISTS idx_respaldos_json_updated_at ON public.respaldos_json (updated_at DESC);
 
+-- ----------------------------------------------------------------------------
+-- 6. PERMISOS Y ROLES DE ACCESO REST v1 (anon, authenticated y service_role)
+-- ----------------------------------------------------------------------------
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
+-- ----------------------------------------------------------------------------
+-- 7. POLÍTICAS DE SEGURIDAD A NIVEL DE FILA (ROW LEVEL SECURITY - RLS)
+-- ----------------------------------------------------------------------------
 ALTER TABLE public.almacen ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.clientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.usuarios_pos ENABLE ROW LEVEL SECURITY;
@@ -4557,19 +4643,22 @@ ALTER TABLE public.ventas_pos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.respaldos_json ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "pos_almacen_all" ON public.almacen;
-CREATE POLICY "pos_almacen_all" ON public.almacen FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "pos_almacen_all" ON public.almacen FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "pos_clientes_all" ON public.clientes;
-CREATE POLICY "pos_clientes_all" ON public.clientes FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "pos_clientes_all" ON public.clientes FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "pos_usuarios_pos_all" ON public.usuarios_pos;
-CREATE POLICY "pos_usuarios_pos_all" ON public.usuarios_pos FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "pos_usuarios_pos_all" ON public.usuarios_pos FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "pos_ventas_pos_all" ON public.ventas_pos;
-CREATE POLICY "pos_ventas_pos_all" ON public.ventas_pos FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "pos_ventas_pos_all" ON public.ventas_pos FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "pos_respaldos_json_all" ON public.respaldos_json;
-CREATE POLICY "pos_respaldos_json_all" ON public.respaldos_json FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);`;
+CREATE POLICY "pos_respaldos_json_all" ON public.respaldos_json FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+
+-- Notificar a PostgREST para refrescar la caché del esquema inmediatamente
+NOTIFY pgrst, 'reload schema';`;
 
 function obtenerRestBaseSupabase(rawUrl) {
   let limpio = String(rawUrl || '').trim().replace(/\/+$/, '');
@@ -4588,19 +4677,55 @@ function headersSupabase(key, extra = {}) {
   return h;
 }
 
+function renderSupabaseLiveStats() {
+  const cont = $('#supaConteosLive');
+  if (!cont) return;
+  if (!supaLiveInfo.verificado) {
+    cont.innerHTML = `
+      <div class="supa-stat" style="grid-column: 1 / -1; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <small style="font-size:0.78rem; text-transform:none; font-weight:500;">
+          ${DB.supabase.conectado ? 'Conexión lista. Haz clic en "Probar y Reconectar" para refrescar el conteo de registros y latencia en vivo.' : 'Haz clic en "Probar y Reconectar" para verificar conexión y estadísticas en vivo.'}
+        </small>
+        <span class="badge ${DB.supabase.conectado ? 'ok' : 'critico'}">${DB.supabase.conectado ? 'En línea' : 'Sin conexión'}</span>
+      </div>`;
+    return;
+  }
+  const c = supaLiveInfo.conteos || {};
+  cont.innerHTML = `
+    <div class="supa-stat"><small>Almacén</small><b>${c.almacen ?? 0}</b></div>
+    <div class="supa-stat"><small>Ventas POS</small><b>${c.ventas ?? 0}</b></div>
+    <div class="supa-stat"><small>Usuarios</small><b>${c.usuarios ?? 0}</b></div>
+    <div class="supa-stat"><small>Clientes</small><b>${c.clientes ?? 0}</b></div>
+    <div class="supa-stat"><small>Respaldos</small><b>${c.respaldos ?? 0}</b></div>
+    <div class="supa-stat"><small>Ping en vivo</small><b style="color:var(--verde, #10b981);">${supaLiveInfo.latenciaMs ?? 0} ms</b></div>
+  `;
+}
+
 function renderSupabaseAjustes() {
   const s = DB.supabase;
-  $('#supaUrl').value = s.url || '';
-  $('#supaKey').value = s.anonKey || '';
+  if ($('#supaUrl')) $('#supaUrl').value = s.url || '';
+  if ($('#supaKey')) $('#supaKey').value = s.anonKey || '';
   if ($('#supaSecretKey')) $('#supaSecretKey').value = s.secretKey || '';
-  $('#sqlSupabaseCode').textContent = TEXTO_SQL_SUPABASE;
+  if ($('#swSupaAutoSync')) $('#swSupaAutoSync').checked = s.autoSync !== false;
+  if ($('#sqlSupabaseCode')) $('#sqlSupabaseCode').textContent = TEXTO_SQL_SUPABASE;
   const badge = $('#supaEstadoBadge');
   const tieneCred = !!(s.url && s.anonKey);
-  badge.textContent = tieneCred ? (s.conectado ? 'CONECTADO' : 'REVISAR CONEXIÓN') : 'SIN CONEXIÓN';
-  badge.className = 'supa-badge' + (tieneCred && s.conectado ? '' : ' desconectado');
-  $('#supaMensajeEstado').textContent = s.ultimaSync
-    ? `Última verificación / sincronización: ${fmtFechaHora(s.ultimaSync)}`
-    : 'Credenciales REST v1 listas para conectar con tu proyecto Supabase.';
+  const conectado = tieneCred && s.conectado;
+  if (badge) {
+    badge.textContent = tieneCred ? (conectado ? 'CONECTADO EN VIVO' : 'REVISAR CONEXIÓN') : 'SIN CONEXIÓN';
+    badge.className = 'supa-badge' + (conectado ? '' : ' desconectado');
+  }
+  const msg = $('#supaMensajeEstado');
+  if (msg) {
+    if (conectado && supaLiveInfo.verificado) {
+      msg.textContent = `Conexión activa con Supabase REST v1 (${supaLiveInfo.latenciaMs} ms) · Sincronización en tiempo real habilitada.`;
+    } else if (s.ultimaSync) {
+      msg.textContent = `Última verificación / sincronización: ${fmtFechaHora(s.ultimaSync)}`;
+    } else {
+      msg.textContent = 'Credenciales REST v1 listas para conectar con tu proyecto Supabase.';
+    }
+  }
+  renderSupabaseLiveStats();
 }
 
 async function copiarSqlSupabase() {
@@ -4613,56 +4738,269 @@ async function copiarSqlSupabase() {
   }
 }
 
-async function probarConexionSupabase() {
-  const rawUrl = $('#supaUrl').value.trim();
-  const key = $('#supaKey').value.trim();
+async function probarConexionSupabase(silencioso = false) {
+  const rawUrl = ($('#supaUrl')?.value || DB.supabase.url || '').trim();
+  const key = ($('#supaKey')?.value || DB.supabase.anonKey || '').trim();
   const restBase = obtenerRestBaseSupabase(rawUrl);
   if (!restBase || !key) {
-    toast('Configura primero la API URL y la Publishable Key de Supabase', 'error');
+    if (!silencioso) toast('Configura primero la API URL y la Publishable Key de Supabase', 'error');
     return;
   }
   if (key.startsWith('sb_secret_')) {
-    toast('Usa la Publishable Key en el navegador (Supabase bloquea Secret Keys desde frontend)', 'error');
+    if (!silencioso) toast('Usa la Publishable Key en el navegador (Supabase bloquea Secret Keys desde frontend)', 'error');
     return;
   }
-  $('#supaMensajeEstado').textContent = 'Verificando conexión real con Supabase REST v1...';
+  if (!silencioso && $('#supaMensajeEstado')) {
+    $('#supaMensajeEstado').textContent = 'Midiendo latencia y verificando tablas en Supabase REST v1...';
+  }
+  
+  const tablas = ['respaldos_json', 'almacen', 'clientes', 'usuarios_pos', 'ventas_pos'];
+  const t0 = performance.now();
   try {
-    const tablas = ['respaldos_json', 'almacen', 'clientes', 'usuarios_pos', 'ventas_pos'];
     const checks = await Promise.all(
-      tablas.map(t =>
-        fetch(`${restBase}/${t}?select=id&limit=1`, {
-          method: 'GET',
-          headers: headersSupabase(key)
-        })
-      )
+      tablas.map(async t => {
+        try {
+          const res = await fetch(`${restBase}/${t}?select=id`, {
+            method: 'GET',
+            headers: headersSupabase(key, {
+              Prefer: 'count=exact',
+              Range: '0-0'
+            })
+          });
+          let total = 0;
+          if (res.ok) {
+            const cr = res.headers.get('content-range') || '';
+            const m = cr.match(/\/(\d+|\*)$/);
+            total = (m && m[1] !== '*') ? parseInt(m[1], 10) : 0;
+          }
+          return { ok: res.ok, status: res.status, tabla: t, total };
+        } catch (e) {
+          return { ok: false, status: 0, tabla: t, error: e?.message || 'Error de red' };
+        }
+      })
     );
+    const latenciaMs = Math.max(1, Math.round(performance.now() - t0));
     const okCount = checks.filter(r => r.ok).length;
+    
     DB.supabase.url = rawUrl;
     DB.supabase.anonKey = key;
     DB.supabase.conectado = okCount === tablas.length;
     DB.supabase.ultimaSync = new Date().toISOString();
-    guardarDB();
-    renderSupabaseAjustes();
-
+    
     if (okCount === tablas.length) {
-      $('#supaMensajeEstado').textContent = `Conexión REST v1 exitosa (${okCount}/${tablas.length} tablas listas) · ${fmtFechaHora(DB.supabase.ultimaSync)}`;
-      toast('Conexión con Supabase verificada correctamente (5/5 tablas)');
+      supaLiveInfo = {
+        verificado: true,
+        latenciaMs,
+        conteos: {
+          respaldos: checks[0].total,
+          almacen: checks[1].total,
+          clientes: checks[2].total,
+          usuarios: checks[3].total,
+          ventas: checks[4].total
+        },
+        ultimoError: ''
+      };
+      guardarDB({ sinSync: true });
+      actualizarRelojYConexion();
+      renderSupabaseAjustes();
+      if (!silencioso) {
+        toast(`Conexión real con Supabase verificada (${latenciaMs} ms · 5/5 tablas)`);
+      }
     } else {
-      const errRes = checks.find(r => !r.ok);
-      let detalle = `HTTP ${errRes?.status || 'Error'}`;
-      try {
-        const j = await errRes.json();
-        if (j?.message) detalle = j.message;
-      } catch (_) {}
-      $('#supaMensajeEstado').textContent = `Tablas accesibles: ${okCount}/${tablas.length} · ${detalle}`;
-      toast(`Conexión parcial (${okCount}/${tablas.length} tablas). Revisa el SQL/RLS en Supabase.`, 'alerta');
+      const fallidas = checks.filter(r => !r.ok).map(r => r.tabla).join(', ');
+      supaLiveInfo.verificado = false;
+      supaLiveInfo.ultimoError = `Tablas inaccesibles: ${fallidas}`;
+      guardarDB({ sinSync: true });
+      actualizarRelojYConexion();
+      renderSupabaseAjustes();
+      if (!silencioso) {
+        toast(`Conexión parcial (${okCount}/${tablas.length} tablas activas). Verifica políticas RLS.`, 'alerta');
+      }
     }
   } catch (err) {
     DB.supabase.conectado = false;
-    guardarDB();
+    supaLiveInfo.verificado = false;
+    supaLiveInfo.ultimoError = err?.message || 'Sin conexión';
+    guardarDB({ sinSync: true });
+    actualizarRelojYConexion();
     renderSupabaseAjustes();
-    $('#supaMensajeEstado').textContent = `No se pudo contactar a Supabase (${err?.message || 'sin red'}).`;
-    toast('No se pudo conectar con Supabase. Verifica tu conexión a internet o la URL.', 'error');
+    if (!silencioso) {
+      toast('No se pudo conectar con Supabase. Verifica tu conexión a internet.', 'error');
+    }
+  }
+}
+
+async function enviarVentaRealASupabase(venta) {
+  if (!DB.supabase?.url || !DB.supabase?.anonKey) return;
+  const restBase = obtenerRestBaseSupabase(DB.supabase.url);
+  const key = DB.supabase.anonKey;
+  try {
+    const row = {
+      origen: venta.origenTipo || 'Salón',
+      comprobante: venta.comprobante || 'Ticket Interno',
+      cliente: venta.cliente || 'Público general',
+      metodo_pago: (venta.metodo === 'Yape' ? 'Yape' : 'Efectivo'),
+      referencia: venta.referencia || (venta.metodo === 'Yape' ? 'Yape directo' : 'Efectivo'),
+      total: Number(venta.total) || 0,
+      usuario: venta.usuario || sesion?.nombre || 'WILLOSIRIS',
+      detalle: venta.items || []
+    };
+    const res = await fetch(`${restBase}/ventas_pos`, {
+      method: 'POST',
+      headers: headersSupabase(key, {
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      }),
+      body: JSON.stringify(row)
+    });
+    if (res.ok) {
+      DB.supabase.conectado = true;
+      DB.supabase.ultimaSync = new Date().toISOString();
+      if (supaLiveInfo.conteos) {
+        supaLiveInfo.conteos.ventas = (supaLiveInfo.conteos.ventas || 0) + 1;
+      }
+      renderSupabaseLiveStats();
+      actualizarRelojYConexion();
+    }
+  } catch (e) {
+    console.warn('Sync de venta a Supabase omitido por red:', e);
+  }
+}
+
+function programarSyncSupabase() {
+  if (DB.supabase?.autoSync === false || !DB.supabase?.url || !DB.supabase?.anonKey) return;
+  if (supaSyncTimer) clearTimeout(supaSyncTimer);
+  supaSyncTimer = setTimeout(() => {
+    sincronizarConSupabaseEnTiempoReal();
+  }, 600);
+}
+
+async function sincronizarConSupabaseEnTiempoReal() {
+  if (DB.supabase?.autoSync === false) return;
+  const restBase = obtenerRestBaseSupabase(DB.supabase?.url);
+  const key = DB.supabase?.anonKey;
+  if (!restBase || !key) return;
+  if (supaSyncEnCurso) {
+    supaSyncPendiente = true;
+    return;
+  }
+  supaSyncEnCurso = true;
+  supaSyncPendiente = false;
+
+  try {
+    // 1. Respaldo JSON completo del POS
+    const payloadSeguro = {
+      ...DB,
+      supabase: { ...DB.supabase, secretKey: '' }
+    };
+    await fetch(`${restBase}/respaldos_json`, {
+      method: 'POST',
+      headers: headersSupabase(key, {
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      }),
+      body: JSON.stringify({
+        nombre_local: DB.config?.nombreLocal || "Juancho's",
+        payload: payloadSeguro
+      })
+    });
+
+    // 2. Sincronizar usuarios (upsert por username)
+    if (Array.isArray(DB.usuarios) && DB.usuarios.length) {
+      const usuariosSync = DB.usuarios.map(u => ({
+        username: u.nombre,
+        rol: u.rol || 'caja',
+        pin_hash: u.pinHash || '',
+        clave_secreta_hash: u.claveSecretaHash || '',
+        foto_url: u.foto || '',
+        permisos: u.permisos || [],
+        activo: u.activo !== false
+      }));
+      await fetch(`${restBase}/usuarios_pos?on_conflict=username`, {
+        method: 'POST',
+        headers: headersSupabase(key, {
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates,return=minimal'
+        }),
+        body: JSON.stringify(usuariosSync)
+      });
+    }
+
+    // 3. Sincronizar inventario en almacen (upsert por id)
+    const filasAlmacen = [];
+    if (Array.isArray(DB.productos)) {
+      DB.productos.forEach(p => {
+        filasAlmacen.push({
+          id: p.id,
+          descripcion: p.nombre,
+          compatibilidad: 'PRODUCTO · ' + (p.cat || 'General'),
+          stock: p.stock ?? 10,
+          und: p.und || 'Plato',
+          p_compra: 0,
+          p_venta: Number(p.precio) || 0,
+          detalles: p.desc || '',
+          imagen_url: p.img || '',
+          observacion: 'Carta POS'
+        });
+      });
+    }
+    if (DB.insumos && typeof DB.insumos === 'object') {
+      let insIdx = 10000;
+      Object.entries(DB.insumos).forEach(([nom, ins]) => {
+        filasAlmacen.push({
+          id: insIdx++,
+          descripcion: nom,
+          compatibilidad: 'INSUMO',
+          stock: Number(ins.stock) || 0,
+          und: ins.unidad || 'Unidad',
+          p_compra: Number(ins.pCompra) || 0,
+          p_venta: 0,
+          detalles: `Mínimo: ${ins.min || 0}`,
+          imagen_url: ins.img || '',
+          observacion: 'Insumo de cocina'
+        });
+      });
+    }
+    if (filasAlmacen.length) {
+      await fetch(`${restBase}/almacen?on_conflict=id`, {
+        method: 'POST',
+        headers: headersSupabase(key, {
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates,return=minimal'
+        }),
+        body: JSON.stringify(filasAlmacen)
+      });
+    }
+
+    // 4. Sincronizar clientes desde envíos
+    if (Array.isArray(DB.envios) && DB.envios.length) {
+      const clientesSync = DB.envios.slice(0, 50).map(ev => ({
+        id: ev.id,
+        origen: 'DELIVERY',
+        nombre: ev.cliente || 'Cliente Delivery',
+        telefono: ev.telefono || '',
+        direccion: ev.direccion || ''
+      }));
+      await fetch(`${restBase}/clientes?on_conflict=id`, {
+        method: 'POST',
+        headers: headersSupabase(key, {
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates,return=minimal'
+        }),
+        body: JSON.stringify(clientesSync)
+      });
+    }
+
+    DB.supabase.conectado = true;
+    DB.supabase.ultimaSync = new Date().toISOString();
+  } catch (e) {
+    console.warn('Error en sincronización en tiempo real con Supabase:', e);
+  } finally {
+    supaSyncEnCurso = false;
+    if (supaSyncPendiente) {
+      supaSyncPendiente = false;
+      programarSyncSupabase();
+    }
   }
 }
 
@@ -4697,15 +5035,16 @@ async function subirDatosSupabase() {
         }
       } catch (_) {}
       DB.supabase.conectado = false;
-      guardarDB();
+      guardarDB({ sinSync: true });
       renderSupabaseAjustes();
-      $('#supaMensajeEstado').textContent = msg;
+      if ($('#supaMensajeEstado')) $('#supaMensajeEstado').textContent = msg;
       toast(msg, 'error');
       return;
     }
     DB.supabase.conectado = true;
     DB.supabase.ultimaSync = new Date().toISOString();
-    guardarDB();
+    guardarDB({ sinSync: true });
+    await probarConexionSupabase(true);
     renderSupabaseAjustes();
     toast('Respaldo sincronizado con la nube de Supabase');
   } catch (err) {
@@ -4736,22 +5075,61 @@ async function descargarDatosSupabase() {
     const arr = await r.json();
     if (Array.isArray(arr) && arr[0]?.payload) {
       const secretLocal = DB.supabase.secretKey;
+      const autoSyncLocal = DB.supabase.autoSync;
       DB = normalizarDB(arr[0].payload);
       if (!DB.supabase.secretKey && secretLocal) DB.supabase.secretKey = secretLocal;
+      DB.supabase.autoSync = autoSyncLocal !== false;
       DB.supabase.ultimaSync = new Date().toISOString();
       DB.supabase.conectado = true;
-      guardarDB();
+      guardarDB({ sinSync: true });
       renderTodo();
+      await probarConexionSupabase(true);
       toast('Datos restaurados desde Supabase Cloud');
       return;
     }
     DB.supabase.conectado = true;
     DB.supabase.ultimaSync = new Date().toISOString();
-    guardarDB();
+    guardarDB({ sinSync: true });
     renderSupabaseAjustes();
     toast('Conexión OK · Aún no hay respaldos guardados en la nube', 'alerta');
   } catch (err) {
     toast(`Error de red al consultar Supabase: ${err?.message || 'sin conexión'}`, 'error');
+  }
+}
+
+async function cargarDatosInicialesSupabase() {
+  if (!DB.supabase?.url || !DB.supabase?.anonKey) {
+    supaBootListo = true;
+    return;
+  }
+  try {
+    await probarConexionSupabase(true);
+    if (DB.supabase.conectado) {
+      const restBase = obtenerRestBaseSupabase(DB.supabase.url);
+      const key = DB.supabase.anonKey;
+      const r = await fetch(`${restBase}/respaldos_json?select=payload,updated_at&order=id.desc&limit=1`, {
+        headers: headersSupabase(key)
+      });
+      if (r.ok) {
+        const arr = await r.json();
+        if (Array.isArray(arr) && arr[0]?.payload) {
+          const secretLocal = DB.supabase.secretKey;
+          const autoSyncLocal = DB.supabase.autoSync;
+          if (!localStorage.getItem(STORAGE_KEY)) {
+            DB = normalizarDB(arr[0].payload);
+            if (secretLocal) DB.supabase.secretKey = secretLocal;
+            DB.supabase.autoSync = autoSyncLocal !== false;
+            guardarDB({ sinSync: true });
+            renderTodo();
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Inicialización Supabase background:', err);
+  } finally {
+    supaBootListo = true;
+    actualizarRelojYConexion();
   }
 }
 
@@ -4777,11 +5155,28 @@ async function editarCredencialesSupabase() {
   DB.supabase.url = datos.url;
   DB.supabase.anonKey = datos.key;
   DB.supabase.secretKey = datos.secretKey || '';
+  DB.supabase.eliminadaManual = false;
   DB.supabase.conectado = true;
   registrarActividad('Conexión Supabase editada', datos.url);
   guardarDB();
   renderSupabaseAjustes();
   toast('Credenciales de Supabase actualizadas');
+}
+
+async function restaurarCredencialesSupabase() {
+  if (!exigirAdmin()) return;
+  DB.supabase = {
+    url: SUPABASE_DEFAULT_URL,
+    anonKey: SUPABASE_DEFAULT_PUB_KEY,
+    secretKey: SUPABASE_DEFAULT_SECRET_KEY,
+    eliminadaManual: false,
+    conectado: true,
+    ultimaSync: null
+  };
+  registrarActividad('Credenciales Supabase restauradas', SUPABASE_DEFAULT_URL);
+  guardarDB();
+  renderSupabaseAjustes();
+  await probarConexionSupabase();
 }
 
 async function eliminarConexionSupabase() {
@@ -4797,6 +5192,7 @@ async function eliminarConexionSupabase() {
   DB.supabase.url = '';
   DB.supabase.anonKey = '';
   DB.supabase.secretKey = '';
+  DB.supabase.eliminadaManual = true;
   DB.supabase.conectado = false;
   registrarActividad('Conexión Supabase eliminada', 'Credenciales limpiadas');
   guardarDB();
@@ -4961,8 +5357,19 @@ function actualizarRelojYConexion() {
   const est = $('#estadoConexion');
   if (est) {
     const on = navigator.onLine !== false;
-    est.className = 'conexion ' + (on ? 'online' : 'offline');
-    est.textContent = on ? 'En línea' : 'Sin red (Local)';
+    if (!on) {
+      est.className = 'conexion offline';
+      est.textContent = 'Sin red (Local)';
+    } else if (DB.supabase?.conectado && supaLiveInfo.verificado) {
+      est.className = 'conexion online';
+      est.innerHTML = `En línea · Supabase conectado <small style="opacity:0.85">(${supaLiveInfo.latenciaMs ?? 0} ms)</small>`;
+    } else if (DB.supabase?.conectado) {
+      est.className = 'conexion online';
+      est.textContent = 'En línea · Supabase conectado';
+    } else {
+      est.className = 'conexion online';
+      est.textContent = 'En línea (Modo local)';
+    }
   }
 }
 
@@ -4975,6 +5382,7 @@ function init() {
   setInterval(actualizarRelojYConexion, 15000);
   window.addEventListener('online', actualizarRelojYConexion);
   window.addEventListener('offline', actualizarRelojYConexion);
+  cargarDatosInicialesSupabase();
 
   // Cerrar cualquier diálogo modal con botones .dlg-mac-close (×) o Cancelar [data-cerrar-dlg]
   document.addEventListener('click', e => {
@@ -5413,11 +5821,17 @@ function init() {
 
   // Ajustes: Supabase
   $('#btnCopiarSqlSupa').addEventListener('click', copiarSqlSupabase);
-  $('#btnSupaProbar').addEventListener('click', probarConexionSupabase);
+  $('#btnSupaProbar').addEventListener('click', () => probarConexionSupabase(false));
   $('#btnSupaDescargar').addEventListener('click', descargarDatosSupabase);
   $('#btnSupaSubir').addEventListener('click', subirDatosSupabase);
   $('#btnSupaEditar').addEventListener('click', editarCredencialesSupabase);
+  $('#btnSupaRestaurar')?.addEventListener('click', restaurarCredencialesSupabase);
   $('#btnSupaEliminar').addEventListener('click', eliminarConexionSupabase);
+  $('#swSupaAutoSync')?.addEventListener('change', e => {
+    DB.supabase.autoSync = e.target.checked;
+    guardarDB({ sinSync: true });
+    toast(DB.supabase.autoSync ? 'Sincronización en tiempo real con Supabase activada' : 'Sincronización en tiempo real pausada');
+  });
   $('#btnToggleSupaSecret')?.addEventListener('click', () => {
     const inp = $('#supaSecretKey');
     if (!inp) return;
