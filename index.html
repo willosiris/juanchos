@@ -608,16 +608,16 @@
             <div>
               <div class="supa-title-row">
                 <h3>Conexión a Supabase (Base de Datos en la Nube)</h3>
-                <span class="supa-badge" id="supaEstadoBadge">CONECTADO</span>
+                <span class="supa-badge desconectado" id="supaEstadoBadge">VERIFICANDO...</span>
               </div>
-              <p class="sub">Conecta tu proyecto de Supabase REST v1 para respaldar tu almacén, clientes, ventas y usuarios.</p>
+              <p class="sub">Conexión REST v1 en tiempo real con Supabase para sincronizar almacén, clientes, ventas, usuarios y respaldos.</p>
             </div>
             <button type="button" class="btn-supa-dark" id="btnCopiarSqlSupa"><svg class="ico"><use href="#i-copiar"/></svg>Copiar Script SQL Completo</button>
           </div>
 
           <div class="supa-grid">
             <div class="supa-card">
-              <h4>1. Credenciales de tu proyecto Supabase</h4>
+              <h4>1. Credenciales y estado en tiempo real</h4>
               <label>API URL (REST v1)
                 <input id="supaUrl" value="https://lbjxpbroaprflqbwjbkz.supabase.co/rest/v1/" readonly>
               </label>
@@ -630,6 +630,11 @@
                   <button type="button" id="btnToggleSupaSecret" class="btn-icono" title="Mostrar u ocultar Secret Key" aria-label="Mostrar u ocultar Secret Key"><svg class="ico"><use href="#i-llave"/></svg></button>
                 </div>
               </label>
+              <label class="switch-row destacado mt">
+                <span><b>Sincronización automática en tiempo real</b><small>Cada venta, plato, insumo, envío o usuario modificado se envía automáticamente a Supabase.</small></span>
+                <input type="checkbox" id="swSupaAutoSync" class="ios-chk" checked>
+              </label>
+              <div class="supa-stats mt" id="supaConteosLive" aria-live="polite"></div>
               <p class="sub mt">Las consultas desde el navegador usan la <b>Publishable Key</b> (Supabase restringe las Secret Keys únicamente para entornos de servidor). Asegúrate de ejecutar el Script SQL de la derecha con las políticas RLS habilitadas.</p>
               <div class="supa-actions mt">
                 <button type="button" class="btn-supa-dark" id="btnSupaProbar">Probar y Reconectar</button>
@@ -638,6 +643,7 @@
               </div>
               <div class="supa-actions mt">
                 <button type="button" id="btnSupaEditar"><svg class="ico"><use href="#i-edit"/></svg>Editar credenciales</button>
+                <button type="button" id="btnSupaRestaurar"><svg class="ico"><use href="#i-reiniciar"/></svg>Restaurar por defecto</button>
                 <button type="button" class="btn-no-sutil" id="btnSupaEliminar"><svg class="ico"><use href="#i-trash"/></svg>Eliminar conexión</button>
               </div>
               <p class="sub mt" id="supaMensajeEstado"></p>
